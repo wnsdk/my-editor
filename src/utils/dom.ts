@@ -1,14 +1,12 @@
-// utils/dom.js
+// utils/dom.ts
 
 /**
  * 블록 요소를 찾는 데 사용되는 데이터 속성 이름입니다.
- * @type {string}
  */
 const BLOCK_ID_DATA_ATTRIBUTE = 'blockId';
 
 /**
  * 삭제 버튼에 사용되는 SVG 아이콘 문자열입니다.
- * @type {string}
  */
 const DELETE_ICON_SVG = `
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -19,14 +17,14 @@ const DELETE_ICON_SVG = `
 /**
  * 주어진 DOM 노드에서 가장 가까운 블록 요소를 찾습니다.
  * 블록 요소는 'data-block-id' 속성을 가집니다.
- * @param {Node} node - 검색을 시작할 DOM 노드.
- * @returns {HTMLElement|null} 가장 가까운 블록 요소 또는 찾지 못한 경우 null.
+ * @param node - 검색을 시작할 DOM 노드.
+ * @returns 가장 가까운 블록 요소 또는 찾지 못한 경우 null.
  */
-export function getBlockElementOf(node) {
+export function getBlockElementOf(node: Node | null): HTMLElement | null {
     if (!node) {
         return null;
     }
-    let el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    let el: HTMLElement | null = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
     while (el) {
         if (el.dataset && el.dataset[BLOCK_ID_DATA_ATTRIBUTE]) {
             return el;
@@ -38,18 +36,18 @@ export function getBlockElementOf(node) {
 
 /**
  * 주어진 요소에 블록 ID 데이터 속성을 설정합니다.
- * @param {HTMLElement} el - 블록 ID를 설정할 요소.
- * @param {string} id - 설정할 블록 ID.
+ * @param el - 블록 ID를 설정할 요소.
+ * @param id - 설정할 블록 ID.
  */
-export function setBlockId(el, id) {
+export function setBlockId(el: HTMLElement, id: string): void {
     el.dataset[BLOCK_ID_DATA_ATTRIBUTE] = id;
 }
 
 /**
  * 삭제 버튼 요소를 생성하고 반환합니다.
- * @returns {HTMLButtonElement} 삭제 버튼 요소.
+ * @returns 삭제 버튼 요소.
  */
-export function createDeleteButton() {
+export function createDeleteButton(): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.classList.add('delete-media-btn');
     btn.innerHTML = DELETE_ICON_SVG;

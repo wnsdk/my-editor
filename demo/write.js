@@ -1,5 +1,5 @@
 import Editor from '../dist/editor.esm.js';
-import { initDB, saveFileToDB, getFileFromDB, clearFilesFromDB, generateFileId } from './db.js';
+import { initDB, saveFileToDB, getFileFromDB, generateFileId } from './db.js';
 
 const STORAGE_KEY = 'editor-demo-data';
 
@@ -11,7 +11,7 @@ const VIDEO_MAX_SIZE_MEGABYTES = 300;
 const IMAGE_MAX_SIZE_BYTES = IMAGE_MAX_SIZE_MEGABYTES * 1024 * 1024;
 const VIDEO_MAX_SIZE_BYTES = VIDEO_MAX_SIZE_MEGABYTES * 1024 * 1024;
 
-const tempFiles = new Map();
+const tempFiles = new Map(); // blobUrl -> { fileId, file }
 
 let editor;
 
@@ -51,9 +51,9 @@ async function initEditor(initialData = null) {
                             }
 
                             const fileId = generateFileId();
-                            tempFiles.set(fileId, file);
                             const blobUrl = URL.createObjectURL(file);
-                            return { success: 1, file: { url: blobUrl, fileId } };
+                            tempFiles.set(blobUrl, { fileId, file });
+                            return { success: 1, file: { url: blobUrl } };
                         }
                     }
                 }
@@ -61,7 +61,7 @@ async function initEditor(initialData = null) {
             video: {
                 toolbar: true,
                 maxCount: VIDEO_LIMIT,
-                onMaxCountReached: (_, max) => Toast.show(`영상은 최대 ${max}개까지 업로드할 수 있어요.`),
+                onMaxCountReached: (_, max) => alert(`영상은 최대 ${max}개까지 업로드할 수 있어요.`),
                 onCountChange: (currentCount, _) => document.getElementById('count-video').textContent = currentCount,
                 config: {
                     showDeleteButton: true,
@@ -79,9 +79,9 @@ async function initEditor(initialData = null) {
                             }
 
                             const fileId = generateFileId();
-                            tempFiles.set(fileId, file);
                             const blobUrl = URL.createObjectURL(file);
-                            return { success: 1, file: { url: blobUrl, fileId } };
+                            tempFiles.set(blobUrl, { fileId, file });
+                            return { success: 1, file: { url: blobUrl } };
                         }
                     },
                 }
@@ -89,13 +89,11 @@ async function initEditor(initialData = null) {
         }
     });
 
-    await editor.isReady;
-
     if (initialData) {
-        await editor.render({ blocks: initialData });
+        editor.load(initialData);
     }
 
-    updateOutput(editor.save()?.blocks || []);
+    updateOutput(editor.serialize());
 }
 
 function updateOutput(blocks) {
@@ -104,62 +102,32 @@ function updateOutput(blocks) {
 }
 
 async function handleSave() {
-    const data = editor.save();
-    if (data) {
-        const blocks = data.blocks;
+    const blocks = editor.serialize();
 
-        for (const block of blocks) {
-            if ((block.type === 'image' || block.type === 'video') && block.data?.file?.fileId) {
-                const fileId = block.data.file.fileId;
-                const file = tempFiles.get(fileId);
-                if (file) {
-                    await saveFileToDB(fileId, file);
-                    tempFiles.delete(fileId);
-                }
+    for (const block of blocks) {
+        if ((block.type === 'image' || block.type === 'video') && block.src) {
+            const temp = tempFiles.get(block.src);
+            if (temp) {
+                await saveFileToDB(temp.fileId, temp.file);
+                block.fileId = temp.fileId;
+                block.src = '';
+                tempFiles.delete(block.src);
             }
         }
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(blocks));
-        alert('저장되었습니다.');
     }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(blocks));
+    alert('저장되었습니다.');
+    window.location.href = 'view.html';
 }
 
-async function handleLoad() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-        const blocks = JSON.parse(saved);
-
-        for (const block of blocks) {
-            if ((block.type === 'image' || block.type === 'video') && block.data?.file?.fileId) {
-                const fileId = block.data.file.fileId;
-                const record = await getFileFromDB(fileId);
-                if (record) {
-                    const blobUrl = URL.createObjectURL(record.file);
-                    block.data.file.url = blobUrl;
-                }
-            }
-        }
-
-        initEditor(blocks);
-        alert('불러왔습니다.');
-    } else {
-        alert('저장된 데이터가 없습니다.');
-    }
-}
-
-async function handleClear() {
+function handleClear() {
     if (confirm('에디터 내용을 모두 지우시겠습니까?')) {
-        await clearFilesFromDB();
-        localStorage.removeItem(STORAGE_KEY);
         tempFiles.clear();
         initEditor();
     }
 }
 
-
-
-
-/** 웹에서 이미지 파일 선택했을 때 */
 function handleImageSelectOnWeb(e) {
     const files = Array.from(e.target.files);
     const uploader = editor.getImageUploader();
@@ -176,7 +144,6 @@ function handleImageSelectOnWeb(e) {
     document.getElementById('image-input').value = '';
 }
 
-/** 웹에서 비디오 파일 선택했을 때 */
 function handleVideoSelectOnWeb(e) {
     const files = Array.from(e.target.files);
     const uploader = editor.getVideoUploader();
@@ -194,7 +161,6 @@ function handleVideoSelectOnWeb(e) {
 }
 
 document.getElementById('btn-save').addEventListener('click', handleSave);
-document.getElementById('btn-load').addEventListener('click', handleLoad);
 document.getElementById('btn-clear').addEventListener('click', handleClear);
 
 initDB().then(() => initEditor());

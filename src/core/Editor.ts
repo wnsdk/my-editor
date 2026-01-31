@@ -9,6 +9,7 @@ import {
 import EventBus from "./EventBus.js";
 import History from "./History.js";
 import Selection from "./Selection.js";
+import MultiBlockSelection from "./MultiBlockSelection.js";
 import Renderer from "./Renderer.js";
 import { createBlock, createBlockFromJSON } from "../blocks/BlockFactory.js";
 import Plugin from "./Plugin.js";
@@ -21,7 +22,8 @@ import {
     DragDropHandlerPlugin,
     ExternalToolPlugin, ImageBlockPlugin,
     KeyHandlerPlugin, ListBlockPlugin,
-    PasteHandlerPlugin, PlaceholderPlugin, TextBlockPlugin, ToolbarPlugin, VideoBlockPlugin
+    CopyPastePlugin, PlaceholderPlugin, TextBlockPlugin, ToolbarPlugin, VideoBlockPlugin,
+    SelectionPlugin
 } from "../plugins";
 import { isListBlock } from "../utils/typeGuards.js";
 
@@ -41,6 +43,7 @@ export default class Editor {
     public eventBus: EventBus;
     public history: History;
     public selection: Selection;
+    public multiSelection: MultiBlockSelection;
     public renderer: Renderer;
     public plugins: PluginInterface[];
     public blockCountChangeCallbacks: Record<string, (currentCount: number, maxCount?: number) => void> = {};
@@ -73,6 +76,7 @@ export default class Editor {
         this.eventBus = new EventBus();
         this.history = new History();
         this.selection = new Selection(this);
+        this.multiSelection = new MultiBlockSelection(this);
         this.renderer = new Renderer(this);
         this.plugins = [];
 
@@ -167,10 +171,11 @@ export default class Editor {
         if (!this.readOnly) {
             corePlugins.push(
                 KeyHandlerPlugin,
-                PasteHandlerPlugin,
+                CopyPastePlugin,
                 DragDropHandlerPlugin,
                 BlockMoveHandlerPlugin,
-                ExternalToolPlugin
+                ExternalToolPlugin,
+                SelectionPlugin
             );
         }
 
@@ -347,12 +352,7 @@ export default class Editor {
     insertBlock(block: BaseBlock): BaseBlock | null {
         if (!this.checkBlockMaxCount(block.type)) return null;
 
-        const isEditorEmpty = this.blocks.length === 1 &&
-            this.blocks[0] != null &&
-            this.blocks[0].type === 'text' &&
-            this.blocks[0].isEmpty();
-
-        if (isEditorEmpty && (block.type === 'image' || block.type === 'video')) {
+        if (this.isEditorEmpty() && (block.type === 'image' || block.type === 'video')) {
             // 에디터가 비어있고 이미지/비디오 블록을 삽입하는 경우, 기본 텍스트 블록을 대체
             this.blocks.splice(0, 1, block);
         } else {
@@ -397,6 +397,56 @@ export default class Editor {
         this.renderer.render(this.blocks);
         this.saveHistory();
         newBlock.focus?.();
+    }
+
+    /**
+     * 현재 선택된 블록을 복제합니다.
+     * @returns {BaseBlock | null} 복제된 블록 또는 복제 실패 시 null
+     */
+    duplicateBlock(blockToDuplicate?: BaseBlock): BaseBlock | null {
+        const targetBlock = blockToDuplicate || this.getSelectedBlock() || this.selection.getCurrentBlock();
+        if (!targetBlock) {
+            return null;
+        }
+
+        // 블록 타입에 따른 최대 개수 체크
+        if (!this.checkBlockMaxCount(targetBlock.type)) {
+            return null;
+        }
+
+        // 블록 데이터를 복사하여 새 블록 생성
+        const blockData = targetBlock.toJSON();
+        const toolConfig = this.toolSettings[blockData.type];
+
+        const duplicatedBlock = createBlockFromJSON(blockData, {
+            config: toolConfig?.config ?? {},
+            api: {
+                removeBlock: (block: BaseBlock) => this.removeBlock(block),
+                editor: this
+            }
+        });
+
+        // 원본 블록 바로 뒤에 복제된 블록 삽입
+        const idx = this.blocks.indexOf(targetBlock);
+        if (idx === -1) {
+            this.blocks.push(duplicatedBlock);
+        } else {
+            this.blocks.splice(idx + 1, 0, duplicatedBlock);
+        }
+
+        this._notifyBlockCountChange(duplicatedBlock.type);
+        this.renderer.render(this.blocks);
+        this.saveHistory();
+
+        // 복제된 블록에 포커스
+        requestAnimationFrame(() => {
+            this.selectAndFocusBlock(duplicatedBlock);
+            if (duplicatedBlock.type === 'text' && duplicatedBlock.el) {
+                this.selection.setRangeAtEnd(duplicatedBlock.el);
+            }
+        });
+
+        return duplicatedBlock;
     }
 
     /**
@@ -531,12 +581,7 @@ export default class Editor {
      * 에디터의 빈 공간을 클릭했을 때 캐럿 위치를 조정합니다.
      */
     private _handleEmptySpaceClick(event: MouseEvent) {
-        const isEditorEmptyState = this.blocks.length === 1 &&
-            this.blocks[0] != null &&
-            this.blocks[0].type === 'text' &&
-            this.blocks[0].isEmpty();
-
-        if (isEditorEmptyState && this.blocks[0]) {
+        if (this.isEditorEmpty() && this.blocks[0]) {
             this.selectAndFocusBlock(this.blocks[0], event);
             return;
         }
@@ -606,11 +651,82 @@ export default class Editor {
      *  히스토리 / 상태
      * ======================================== */
     
-    /** 
+    /**
      * 현재 에디터 상태를 히스토리에 저장합니다.
      */
     saveHistory() {
         this.history.push(this.serialize());
+    }
+
+    /**
+     * 실행 취소 (Undo)를 수행합니다.
+     * @returns {boolean} 실행 취소가 성공하면 true, 그렇지 않으면 false
+     */
+    undo(): boolean {
+        if (!this.history.canUndo()) {
+            return false;
+        }
+
+        const previousState = this.history.undo() as BaseBlockData[] | null;
+        if (!previousState) {
+            return false;
+        }
+
+        this._restoreState(previousState);
+        return true;
+    }
+
+    /**
+     * 다시 실행 (Redo)을 수행합니다.
+     * @returns {boolean} 다시 실행이 성공하면 true, 그렇지 않으면 false
+     */
+    redo(): boolean {
+        if (!this.history.canRedo()) {
+            return false;
+        }
+
+        const nextState = this.history.redo() as BaseBlockData[] | null;
+        if (!nextState) {
+            return false;
+        }
+
+        this._restoreState(nextState);
+        return true;
+    }
+
+    /**
+     * 히스토리 상태를 복원합니다.
+     */
+    private _restoreState(state: BaseBlockData[]): void {
+        this.blocks = state.map(data => {
+            const toolConfig = this.toolSettings[data.type];
+
+            return createBlockFromJSON(data, {
+                config: toolConfig?.config ?? {},
+                api: {
+                    removeBlock: (block: BaseBlock) => this.removeBlock(block),
+                    editor: this
+                }
+            });
+        });
+
+        this.renderer.render(this.blocks);
+
+        // 첫 번째 블록에 포커스
+        requestAnimationFrame(() => {
+            if (this.blocks.length > 0 && this.blocks[0]?.el) {
+                this.selectAndFocusBlock(this.blocks[0]);
+                if (this.blocks[0].type === 'text') {
+                    this.selection.setRangeAtStart(this.blocks[0].el);
+                }
+            }
+        });
+
+        // 블록 카운트 콜백 호출
+        const types = new Set(this.blocks.map(b => b.type));
+        types.forEach(type => this._notifyBlockCountChange(type));
+
+        this.eventBus.emit("document:mutated");
     }
 
     /**
@@ -652,7 +768,19 @@ export default class Editor {
     /* ========================================
      *  기타
      * ======================================== */
-    
+
+    /**
+     * 에디터가 비어있는 상태인지 확인합니다.
+     * (텍스트 블록 1개만 있고, 그 블록이 비어있는 경우)
+     * @returns {boolean} 에디터가 비어있으면 true, 그렇지 않으면 false
+     */
+    isEditorEmpty(): boolean {
+        return this.blocks.length === 1 &&
+            this.blocks[0] != null &&
+            this.blocks[0].type === 'text' &&
+            this.blocks[0].isEmpty();
+    }
+
     /**
      * 에디터에 의미 있는 콘텐츠가 있는지 확인합니다.
      */
@@ -710,4 +838,46 @@ export default class Editor {
         }
     }
 
+    /**
+     * 에디터 인스턴스를 정리합니다.
+     * 이벤트 리스너 제거, 플러그인 정리, DOM 정리 등을 수행합니다.
+     * SPA에서 컴포넌트 언마운트 시 메모리 누수를 방지하기 위해 호출합니다.
+     */
+    destroy(): void {
+        // 1. 이벤트 버스 모든 리스너 제거
+        this.eventBus.clear();
+
+        // 2. 플러그인 정리 (destroy 메서드가 있는 경우)
+        this.plugins.forEach(plugin => {
+            if (typeof (plugin as any).destroy === 'function') {
+                (plugin as any).destroy();
+            }
+        });
+        this.plugins = [];
+
+        // 3. 히스토리 초기화
+        this.history.clear();
+
+        // 4. MultiBlockSelection 정리
+        this.multiSelection.destroy();
+
+        // 5. 블록 정리
+        this.blocks.forEach(block => {
+            if (typeof (block as any).destroy === 'function') {
+                (block as any).destroy();
+            }
+        });
+        this.blocks = [];
+
+        // 6. DOM 정리
+        this.root.innerHTML = '';
+        this.root.classList.remove('editor-root', 'editor-readonly');
+        this.root.removeAttribute('contenteditable');
+        this.root.removeAttribute('spellcheck');
+
+        // 7. 콜백 정리
+        this.blockCountChangeCallbacks = {};
+    }
+
 }
+

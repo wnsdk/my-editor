@@ -1,13 +1,17 @@
-// utils/upload.js
+// utils/upload.ts
+
+export interface UploadResponse {
+    url: string;
+}
 
 /**
  * 파일을 지정된 URL로 업로드합니다.
- * @param {File} file - 업로드할 파일 객체.
- * @param {string} url - 파일을 업로드할 대상 URL.
- * @returns {Promise<object>} 업로드 성공 시 서버 응답 (JSON 형식, 예: { url: "https://..." }).
- * @throws {Error} 업로드 실패 시 에러를 발생시킵니다.
+ * @param file - 업로드할 파일 객체.
+ * @param url - 파일을 업로드할 대상 URL.
+ * @returns 업로드 성공 시 서버 응답 (JSON 형식, 예: { url: "https://..." }).
+ * @throws 업로드 실패 시 에러를 발생시킵니다.
  */
-export async function uploadFile(file, url) {
+export async function uploadFile(file: File, url: string): Promise<UploadResponse> {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -25,6 +29,6 @@ export async function uploadFile(file, url) {
         return res.json(); // { url: "https://..." } 형식 가정
     } catch (error) {
         console.error("Error during file upload:", error);
-        throw new Error(`File upload failed: ${error.message}`);
+        throw new Error(`File upload failed: ${(error as Error).message}`);
     }
 }

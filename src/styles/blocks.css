@@ -156,3 +156,57 @@ ol.list-block {
 .editor-readonly .video-block-wrapper.selected > .video-block > video {
     outline: none;
 }
+
+/* ========================================
+ *  다중 블록 선택 (Multi-Block Selection) 스타일
+ * ======================================== */
+
+/* Block Selection 모드: 전체 블록이 선택된 상태 */
+.block.multi-selected {
+    background-color: rgba(59, 130, 246, 0.1);
+    outline: 2px solid rgba(59, 130, 246, 0.5);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Block Selection - 이미지/비디오 블록 */
+.image-block-wrapper.multi-selected > .image-block > img,
+.video-block-wrapper.multi-selected > .video-block > video {
+    outline: 3px solid rgba(59, 130, 246, 0.8);
+}
+
+/* Range Selection 모드: 범위 선택된 블록 */
+.block.range-selected {
+    background-color: rgba(147, 197, 253, 0.3);
+}
+
+/* Range Selection - 텍스트 블록 내 선택 영역 */
+.block.range-selected::selection,
+.block.range-selected *::selection {
+    background-color: rgba(59, 130, 246, 0.4);
+}
+
+/* 다중 선택 시 hover 효과 유지 */
+.block.multi-selected:hover,
+.block.range-selected:hover {
+    background-color: rgba(59, 130, 246, 0.15);
+}
+
+/* 리스트 블록 다중 선택 */
+.list-block.multi-selected,
+.list-block.range-selected {
+    padding: 4px;
+    margin: 0;
+}
+
+/* 다중 선택 시 개별 블록 selected 클래스와의 조합 */
+.block.selected.multi-selected {
+    outline-color: rgba(59, 130, 246, 0.8);
+}
+
+/* ReadOnly 모드에서 다중 선택 비활성화 */
+.editor-readonly .block.multi-selected,
+.editor-readonly .block.range-selected {
+    background-color: transparent;
+    outline: none;
+}

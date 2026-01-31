@@ -116,7 +116,10 @@ export default class ExternalToolPlugin extends Plugin {
                         "";
 
                 if (src) {
-                    const block = this.editor.createDefaultImageBlock(src)
+                    // 타입에 따라 적절한 블록 생성
+                    const block = type === "video"
+                        ? this.editor.createDefaultVideoBlock(src)
+                        : this.editor.createDefaultImageBlock(src);
                     this.editor.insertBlock(block);
                 }
             } catch (err) {

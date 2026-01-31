@@ -37,7 +37,61 @@ export default class KeyHandlerPlugin extends Plugin {
         if (event.isComposing) return;
         if (this.editor.readOnly) return;
 
-        const { key } = event;
+        const { key, ctrlKey, metaKey, shiftKey } = event;
+        const isModifierKey = ctrlKey || metaKey; // Windows: Ctrl, Mac: Cmd
+
+        // Escape: 선택 해제
+        if (key === 'Escape') {
+            if (this.editor.multiSelection.hasSelection()) {
+                event.preventDefault();
+                this.editor.multiSelection.clearSelection();
+                return;
+            }
+        }
+
+        // Ctrl+A: 전체 선택
+        if (isModifierKey && key.toLowerCase() === 'a') {
+            event.preventDefault();
+            this.editor.multiSelection.selectAll();
+            return;
+        }
+
+        // Undo: Ctrl+Z (Windows) / Cmd+Z (Mac)
+        if (isModifierKey && key.toLowerCase() === 'z' && !shiftKey) {
+            event.preventDefault();
+            this.editor.undo();
+            return;
+        }
+
+        // Redo: Ctrl+Y (Windows) / Cmd+Shift+Z (Mac) / Ctrl+Shift+Z
+        if ((isModifierKey && key.toLowerCase() === 'y') ||
+            (isModifierKey && key.toLowerCase() === 'z' && shiftKey)) {
+            event.preventDefault();
+            this.editor.redo();
+            return;
+        }
+
+        // Duplicate: Ctrl+D (Windows) / Cmd+D (Mac)
+        if (isModifierKey && key.toLowerCase() === 'd') {
+            event.preventDefault();
+            this.editor.duplicateBlock();
+            return;
+        }
+
+        // 다중 블록 선택 상태에서 삭제 키 처리
+        if (this.editor.multiSelection.hasSelection()) {
+            if (key === 'Backspace' || key === 'Delete') {
+                event.preventDefault();
+                this.editor.multiSelection.deleteSelectedBlocks();
+                return;
+            }
+
+            // 다중 선택 상태에서 일반 키 입력 시 선택 해제
+            if (!isModifierKey && !shiftKey && key.length === 1) {
+                this.editor.multiSelection.clearSelection();
+            }
+        }
+
         const currentBlockWithCaret = this.editor.selection.getCurrentBlock();
         const selectedBlock = this.editor.getSelectedBlock();
 
@@ -54,7 +108,7 @@ export default class KeyHandlerPlugin extends Plugin {
         const activeBlock = currentBlockWithCaret || selectedBlock;
         if (!activeBlock) return;
 
-        if (key === "Enter" && !event.shiftKey) {
+        if (key === "Enter" && !shiftKey) {
             event.preventDefault();
             this._handleEnter(event, activeBlock);
         } else if (key === "Backspace") {
@@ -62,7 +116,16 @@ export default class KeyHandlerPlugin extends Plugin {
         } else if (key === "Delete") {
             this._handleDelete(event, activeBlock);
         } else if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) {
-            this._handleArrowKeys(event, activeBlock);
+            // Shift+Arrow: 범위 선택 확장
+            if (shiftKey) {
+                this._handleShiftArrowKeys(event, activeBlock);
+            } else {
+                // 일반 방향키는 선택 해제 후 이동
+                if (this.editor.multiSelection.hasSelection()) {
+                    this.editor.multiSelection.clearSelection();
+                }
+                this._handleArrowKeys(event, activeBlock);
+            }
         }
     }
 
@@ -219,6 +282,95 @@ export default class KeyHandlerPlugin extends Plugin {
     /* ================================
      * Arrow keys
      * ================================ */
+
+    /**
+     * Shift+방향키로 범위 선택을 확장합니다.
+     */
+    private _handleShiftArrowKeys(event: KeyboardEvent, block: BaseBlock): void {
+        const key = event.key;
+        const currentIndex = this.editor.blocks.indexOf(block);
+        const multiSelection = this.editor.multiSelection;
+
+        const isUp = key === "ArrowUp";
+        const isDown = key === "ArrowDown";
+        const isLeft = key === "ArrowLeft";
+        const isRight = key === "ArrowRight";
+
+        // 선택이 아직 시작되지 않았으면 현재 블록에서 시작
+        if (!multiSelection.hasSelection()) {
+            // 현재 캐럿 위치를 기준으로 Range Selection 시작
+            const offset = this._getCurrentCaretOffset(block);
+            multiSelection.startRangeSelection(block, offset);
+        }
+
+        // 텍스트 블록 내에서의 텍스트 선택은 브라우저 기본 동작 사용
+        if ((block.type === 'text' || block.type === 'list') && block.el) {
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+
+                // 블록 경계에 도달했는지 확인
+                const atBoundary = this._isCaretAtBlockBoundary(range, block.el, isUp, isDown, isLeft, isRight);
+
+                if (atBoundary) {
+                    // 블록 경계에서 다음/이전 블록으로 선택 확장
+                    let targetIndex = currentIndex;
+                    if (isUp || isLeft) targetIndex = currentIndex - 1;
+                    if (isDown || isRight) targetIndex = currentIndex + 1;
+
+                    const targetBlock = this.editor.blocks[targetIndex];
+                    if (targetBlock) {
+                        event.preventDefault();
+
+                        // Range Selection 확장
+                        const targetOffset = (isUp || isLeft) ?
+                            this._getBlockTextLength(targetBlock) : 0;
+                        multiSelection.extendRangeSelection(targetBlock, targetOffset);
+                    }
+                }
+                // 블록 내부에서는 브라우저 기본 동작 (텍스트 선택) 허용
+            }
+        } else {
+            // 비텍스트 블록에서는 블록 단위 선택
+            event.preventDefault();
+
+            let targetIndex = currentIndex;
+            if (isUp || isLeft) targetIndex = currentIndex - 1;
+            if (isDown || isRight) targetIndex = currentIndex + 1;
+
+            const targetBlock = this.editor.blocks[targetIndex];
+            if (targetBlock) {
+                multiSelection.extendRangeSelection(targetBlock, 0);
+            }
+        }
+    }
+
+    /**
+     * 현재 캐럿의 텍스트 오프셋을 반환합니다.
+     */
+    private _getCurrentCaretOffset(block: BaseBlock): number {
+        if (!block.el) return 0;
+
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return 0;
+
+        const range = sel.getRangeAt(0);
+
+        // 캐럿 위치까지의 텍스트 길이 계산
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(block.el);
+        preCaretRange.setEnd(range.startContainer, range.startOffset);
+
+        return preCaretRange.toString().length;
+    }
+
+    /**
+     * 블록의 전체 텍스트 길이를 반환합니다.
+     */
+    private _getBlockTextLength(block: BaseBlock): number {
+        if (!block.el) return 0;
+        return block.el.textContent?.length || 0;
+    }
 
     /**
      * 방향키 이벤트를 처리하여 블록 간 또는 블록 내 캐럿을 이동합니다.

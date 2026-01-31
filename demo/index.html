@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/demo/">
     <title>Editor Demo</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -10,33 +11,18 @@
     <div class="container">
         <header>
             <h1>Block Editor Demo</h1>
-            <div class="actions">
-                <button id="btn-save">Save</button>
-                <button id="btn-load">Load</button>
-                <button id="btn-clear">Clear</button>
-            </div>
-            <div class="media-controls">
-                <button id="selectImageButton">이미지 추가</button>
-                <span>이미지: <span id="count-image">0</span>/7</span>
-                <button id="selectVideoButton">영상 추가</button>
-                <span>영상: <span id="count-video">0</span>/1</span>
-            </div>
         </header>
 
-        <main>
-            <div id="editor"></div>
+        <main class="menu">
+            <a href="write.html" class="menu-item">
+                <h2>글 작성</h2>
+                <p>새 글을 작성합니다</p>
+            </a>
+            <a href="view.html" class="menu-item">
+                <h2>글 보기</h2>
+                <p>저장된 글을 확인합니다 (읽기 전용)</p>
+            </a>
         </main>
-
-        <aside>
-            <h2>Output (JSON)</h2>
-            <pre id="output"></pre>
-        </aside>
     </div>
-
-    <!-- Hidden file inputs for image/video selection -->
-    <input type="file" id="image-input" accept="image/*" multiple style="display: none;">
-    <input type="file" id="video-input" accept="video/*" style="display: none;">
-
-    <script type="module" src="main.js"></script>
 </body>
 </html>

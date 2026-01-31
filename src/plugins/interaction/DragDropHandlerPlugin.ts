@@ -30,6 +30,12 @@ export default class DragDropHandlerPlugin extends Plugin {
 
 
     private _onDragStart(event: DragEvent) {
+        // readOnly 모드에서는 드래그 비활성화
+        if (this.editor.readOnly) {
+            event.preventDefault();
+            return;
+        }
+
         const target = event.target as HTMLElement | null;
         const blockEl = target?.closest<HTMLElement>(".image-block-wrapper, .video-block-wrapper");
 
@@ -83,7 +89,7 @@ export default class DragDropHandlerPlugin extends Plugin {
 
         const { targetBlock, dropPosition, indicatorTop } = result;
 
-        this._updateDragIndicator();
+        this._updateDragIndicator(indicatorTop);
         this.dragOverBlockEl = targetBlock;
         this.dropPosition = dropPosition;
     }
@@ -228,12 +234,13 @@ export default class DragDropHandlerPlugin extends Plugin {
 
     /**
      * 드래그 인디케이터의 위치와 스타일을 업데이트하여 표시합니다.
+     * @param indicatorTop - 인디케이터의 top 위치 (에디터 루트 기준)
      */
-    private _updateDragIndicator() {
+    private _updateDragIndicator(indicatorTop: number) {
         if (!this.dragIndicatorEl) return;
 
         const rect = this.editor.root.getBoundingClientRect();
-        this.dragIndicatorEl.style.top = `${top}px`;
+        this.dragIndicatorEl.style.top = `${indicatorTop}px`;
         this.dragIndicatorEl.style.left = "0px";
         this.dragIndicatorEl.style.width = `${rect.width}px`;
         this.dragIndicatorEl.style.display = "block";

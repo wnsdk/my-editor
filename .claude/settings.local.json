@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__fc8b9985-81f6-47ff-908b-2222d305a6f5__notion-create-pages",
+      "mcp__fc8b9985-81f6-47ff-908b-2222d305a6f5__notion-update-data-source",
+      "mcp__fc8b9985-81f6-47ff-908b-2222d305a6f5__notion-update-page",
+      "Bash(npm run build:*)",
+      "mcp__mcp-registry__search_mcp_registry",
+      "mcp__mcp-registry__suggest_connectors",
+      "Bash(echo:*)",
+      "Bash(curl:*)",
+      "Bash(chmod:*)",
+      "Bash(bash add_methods_to_notion.sh:*)",
+      "Bash(bash add_methods_part2.sh:*)",
+      "Bash(bash add_methods_part3.sh:*)",
+      "Bash(bash:*)"
+    ]
+  }
+}
