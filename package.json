@@ -1,0 +1,30 @@
+{
+  "name": "editor",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "A custom contenteditable-based block editor",
+  "main": "dist/editor.cjs.js",
+  "module": "dist/editor.esm.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "serve": "npx serve ."
+  },
+  "keywords": [
+    "editor",
+    "contenteditable",
+    "block-editor"
+  ],
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.0",
+    "rollup": "^4.53.3",
+    "rollup-plugin-postcss": "^4.0.2",
+    "typescript": "^5.6.3",
+    "tslib": "^2.8.1",
+    "@types/node": "^22.10.1"
+  }
+}

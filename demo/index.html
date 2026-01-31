@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Block Editor Demo</h1>
+            <div class="actions">
+                <button id="btn-save">Save</button>
+                <button id="btn-load">Load</button>
+                <button id="btn-clear">Clear</button>
+            </div>
+        </header>
+
+        <main>
+            <div id="editor"></div>
+        </main>
+
+        <aside>
+            <h2>Output (JSON)</h2>
+            <pre id="output"></pre>
+        </aside>
+    </div>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>

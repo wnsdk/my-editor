@@ -1,0 +1,11 @@
+/* styles/toolbar.css */
+.editor-toolbar button b,
+.editor-toolbar button i,
+.editor-toolbar button u,
+.editor-toolbar button s {
+    font-size: 12px;
+}
+
+.editor-image-toolbar button {
+    font-size: 12px;
+}
