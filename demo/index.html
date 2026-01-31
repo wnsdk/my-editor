@@ -15,6 +15,12 @@
                 <button id="btn-load">Load</button>
                 <button id="btn-clear">Clear</button>
             </div>
+            <div class="media-controls">
+                <button id="selectImageButton">이미지 추가</button>
+                <span>이미지: <span id="count-image">0</span>/7</span>
+                <button id="selectVideoButton">영상 추가</button>
+                <span>영상: <span id="count-video">0</span>/1</span>
+            </div>
         </header>
 
         <main>
@@ -26,6 +32,10 @@
             <pre id="output"></pre>
         </aside>
     </div>
+
+    <!-- Hidden file inputs for image/video selection -->
+    <input type="file" id="image-input" accept="image/*" multiple style="display: none;">
+    <input type="file" id="video-input" accept="video/*" style="display: none;">
 
     <script type="module" src="main.js"></script>
 </body>
