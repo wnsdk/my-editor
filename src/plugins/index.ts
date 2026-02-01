@@ -3,6 +3,7 @@ export { default as ImageBlockPlugin } from "./block/ImageBlockPlugin";
 export { default as TextBlockPlugin } from "./block/TextBlockPlugin";
 export { default as ListBlockPlugin } from "./block/ListBlockPlugin";
 export { default as VideoBlockPlugin } from "./block/VideoBlockPlugin";
+export { default as TableBlockPlugin } from "./block/TableBlockPlugin";
 
 // input plugins
 export { default as KeyHandlerPlugin } from "./input/KeyHandlerPlugin";

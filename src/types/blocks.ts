@@ -6,7 +6,8 @@ export type BlockData =
     | TextBlockData
     | ListBlockData
     | ImageBlockData
-    | VideoBlockData;
+    | VideoBlockData
+    | TableBlockData;
 
 export type BaseBlockData = {
     id?: string;
@@ -38,6 +39,16 @@ export type VideoBlockData = BaseBlockData & {
     type: 'video';
     src: string;
     posterUrl?: string | undefined;
+}
+
+export type TableCellData = {
+    html: string;
+}
+
+export type TableBlockData = BaseBlockData & {
+    type: 'table';
+    rows: TableCellData[][];
+    colWidths?: number[];  // 각 열의 너비 (픽셀)
 }
 
 

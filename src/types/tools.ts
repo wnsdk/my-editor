@@ -1,7 +1,7 @@
 // tool.ts
 import BaseBlock from "../blocks/BaseBlock";
 
-export type ToolType = 'text' | 'image' | 'video' | 'list'
+export type ToolType = 'text' | 'image' | 'video' | 'list' | 'table'
 
 /**
  * 공통 Tool 설정
@@ -33,11 +33,19 @@ export interface VideoToolConfig {
 
 
 
+export interface TableToolConfig {
+    showDeleteButton: boolean;
+    defaultRows: number;
+    defaultCols: number;
+    minCellWidth: number;
+}
+
 export interface ToolConfigMap {
     text: TextToolConfig
     image: ImageToolConfig
     video: VideoToolConfig
     list: Record<string, never>
+    table: TableToolConfig
 }
 
 export type TypedToolConfig<T extends ToolType> = ToolConfig<ToolConfigMap[T]>
