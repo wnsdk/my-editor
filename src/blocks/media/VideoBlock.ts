@@ -1,5 +1,5 @@
 import MediaBlock from "./MediaBlock";
-import {BlockInit, VideoBlockData, VideoToolConfig} from "../types";
+import {BlockInit, VideoBlockData, VideoToolConfig} from "../../types";
 
 /**
  * 에디터의 비디오 블록을 나타내는 클래스입니다.

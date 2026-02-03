@@ -1,5 +1,5 @@
 import TextEditableBlock from "./TextEditableBlock";
-import {BlockInit, TextBlockData, TextToolConfig} from "../types";
+import {BlockInit, TextBlockData, TextToolConfig} from "../../types";
 
 /**
  * 에디터의 텍스트 블록을 나타내는 클래스입니다.

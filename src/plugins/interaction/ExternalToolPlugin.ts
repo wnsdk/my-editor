@@ -1,8 +1,8 @@
 import Plugin from "../../core/Plugin";
 import Editor from "../../core/Editor";
 import {ImageToolConfig, ToolConfig, ToolType, VideoToolConfig} from "../../types";
-import ImageBlock from "../../blocks/ImageBlock";
-import VideoBlock from "../../blocks/VideoBlock";
+import ImageBlock from "../../blocks/media/ImageBlock";
+import VideoBlock from "../../blocks/media/VideoBlock";
 
 /**
  * 외부 UI 요소(버튼 등)와 에디터의 블록 삽입/업로드 기능을 연결하는 플러그인입니다.

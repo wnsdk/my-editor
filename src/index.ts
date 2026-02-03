@@ -10,12 +10,12 @@ import Editor from "./core/Editor.js";
 // import "./blocks/VideoBlock.ts";
 import * as BlockFactory from "./blocks/BlockFactory.js"; // BlockFactory를 명확한 이름으로 임포트
 import BaseBlock from "./blocks/BaseBlock.js";
-import MediaBlock from "./blocks/MediaBlock.js";
-import TextEditableBlock from "./blocks/TextEditableBlock.js";
-import TextBlock from "./blocks/TextBlock.js";
-import ImageBlock from "./blocks/ImageBlock.js";
-import VideoBlock from "./blocks/VideoBlock.js";
-import ListBlock from "./blocks/ListBlock.js";
+import MediaBlock from "./blocks/media/MediaBlock.js";
+import TextEditableBlock from "./blocks/editable/TextEditableBlock.js";
+import TextBlock from "./blocks/editable/TextBlock.js";
+import ImageBlock from "./blocks/media/ImageBlock.js";
+import VideoBlock from "./blocks/media/VideoBlock.js";
+import ListBlock from "./blocks/editable/ListBlock.js";
 
 // 에디터에 필요한 스타일시트 임포트
 import "./styles/editor.css";

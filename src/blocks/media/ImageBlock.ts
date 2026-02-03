@@ -1,5 +1,5 @@
 import MediaBlock from "./MediaBlock";
-import {BlockInit, ImageBlockData, ImageToolConfig} from "../types";
+import {BlockInit, ImageBlockData, ImageToolConfig} from "../../types";
 
 /**
  * 에디터의 이미지 블록을 나타내는 클래스입니다.

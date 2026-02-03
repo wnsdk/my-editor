@@ -1,6 +1,6 @@
 import Plugin from "../../core/Plugin";
 import Editor from "../../core/Editor";
-import ImageBlock from "../../blocks/ImageBlock";
+import ImageBlock from "../../blocks/media/ImageBlock";
 import { registerBlock } from "../../blocks/BlockFactory";
 import { getBlockElementOf } from "../../utils/dom";
 import { ImageToolConfig, ToolConfig } from "../../types";

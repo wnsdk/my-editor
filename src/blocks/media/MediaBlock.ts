@@ -1,6 +1,6 @@
-import BaseBlock from "./BaseBlock";
-import { createDeleteButton } from "../utils/dom.js";
-import { BlockInit, ToolConfig, ToolType } from "../types";
+import BaseBlock from "../BaseBlock";
+import { createDeleteButton } from "../../utils/dom.js";
+import { BlockInit, ToolConfig, ToolType } from "../../types";
 
 /**
  * 미디어 블록(이미지, 비디오)의 공통 기능을 제공하는 추상 클래스입니다.

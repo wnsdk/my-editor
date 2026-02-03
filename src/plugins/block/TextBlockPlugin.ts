@@ -1,5 +1,5 @@
 import Plugin from "../../core/Plugin";
-import TextBlock from "../../blocks/TextBlock";
+import TextBlock from "../../blocks/editable/TextBlock";
 import { registerBlock } from "../../blocks/BlockFactory";
 import type Editor from "../../core/Editor";
 import type { ToolConfig } from "../../types";

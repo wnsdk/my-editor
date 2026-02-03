@@ -1,5 +1,5 @@
 import Plugin from "../../core/Plugin";
-import VideoBlock from "../../blocks/VideoBlock";
+import VideoBlock from "../../blocks/media/VideoBlock";
 import { registerBlock } from "../../blocks/BlockFactory";
 import Editor from "../../core/Editor";
 import {ToolConfig, VideoToolConfig} from "../../types";

@@ -1,6 +1,6 @@
 import TextEditableBlock from "./TextEditableBlock";
-import { ListBlockData, BlockInit } from "../types/blocks";
-import { isListBlock } from "../utils/typeGuards";
+import { ListBlockData, BlockInit } from "../../types/blocks";
+import { isListBlock } from "../../utils/typeGuards";
 
 export default class ListBlock extends TextEditableBlock {
     public style: 'ordered' | 'unordered';

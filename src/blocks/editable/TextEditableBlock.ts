@@ -1,5 +1,5 @@
-import BaseBlock from "./BaseBlock";
-import { BlockInit, ToolConfig, ToolType } from "../types";
+import BaseBlock from "../BaseBlock";
+import { BlockInit, ToolConfig, ToolType } from "../../types";
 
 /**
  * 편집 가능한 텍스트 블록(텍스트, 리스트)의 공통 기능을 제공하는 추상 클래스입니다.

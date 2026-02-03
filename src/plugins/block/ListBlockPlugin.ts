@@ -1,5 +1,5 @@
 import Plugin from "../../core/Plugin";
-import ListBlock from "../../blocks/ListBlock";
+import ListBlock from "../../blocks/editable/ListBlock";
 import { registerBlock } from "../../blocks/BlockFactory";
 import type Editor from "../../core/Editor";
 import { ToolConfig } from "../../types";

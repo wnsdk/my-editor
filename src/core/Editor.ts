@@ -13,9 +13,9 @@ import MultiBlockSelection from "./MultiBlockSelection.js";
 import Renderer from "./Renderer.js";
 import { createBlock, createBlockFromJSON } from "../blocks/BlockFactory.js";
 import Plugin from "./Plugin.js";
-import TextBlock from "../blocks/TextBlock";
-import ImageBlock from "../blocks/ImageBlock";
-import VideoBlock from "../blocks/VideoBlock";
+import TextBlock from "../blocks/editable/TextBlock";
+import ImageBlock from "../blocks/media/ImageBlock";
+import VideoBlock from "../blocks/media/VideoBlock";
 import BaseBlock from "../blocks/BaseBlock";
 import {
     BlockMoveHandlerPlugin,

@@ -1,7 +1,7 @@
 import Plugin from "../../core/Plugin";
 import Editor from "../../core/Editor";
 import BaseBlock from "../../blocks/BaseBlock";
-import TextBlock from "../../blocks/TextBlock";
+import TextBlock from "../../blocks/editable/TextBlock";
 import {createBlock} from "../../blocks/BlockFactory";
 import { isListBlock } from "../../utils/typeGuards";
 import Sanitizer from "../../core/Sanitizer";
