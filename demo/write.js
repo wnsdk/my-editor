@@ -1,4 +1,4 @@
-import Editor from '../dist/editor.esm.js';
+import Editor, { ImageBlock, VideoBlock } from '../dist/editor.esm.js';
 import { initDB, saveFileToDB, getFileFromDB, generateFileId } from './db.js';
 
 const STORAGE_KEY = 'editor-demo-data';
@@ -136,7 +136,14 @@ function handleImageSelectOnWeb(e) {
         if (uploader && editor) {
             const res = await uploader.uploadByFile(file);
             if (res && res.success) {
-                const block = editor.createDefaultImageBlock(res.file.url);
+                const toolConfig = editor.getToolConfig("image");
+                const block = ImageBlock.createDefault(res.file.url, {
+                    config: toolConfig?.config ?? {},
+                    api: {
+                        editor: editor,
+                        removeBlock: (block) => editor.removeBlock(block)
+                    }
+                });
                 editor.insertBlock(block);
             }
         }
@@ -152,7 +159,14 @@ function handleVideoSelectOnWeb(e) {
         if (uploader && editor) {
             const res = await uploader.uploadByFile(file);
             if (res && res.success) {
-                const block = editor.createDefaultVideoBlock(res.file.url);
+                const toolConfig = editor.getToolConfig("video");
+                const block = VideoBlock.createDefault(res.file.url, {
+                    config: toolConfig?.config ?? {},
+                    api: {
+                        editor: editor,
+                        removeBlock: (block) => editor.removeBlock(block)
+                    }
+                });
                 editor.insertBlock(block);
             }
         }

@@ -174,7 +174,15 @@ export default class KeyHandlerPlugin extends Plugin {
             // Sanitizer를 사용하여 중첩된 블록 요소 제거
             const htmlContent = tempDiv.innerHTML || "";
             const sanitizedHtml = Sanitizer.clean(htmlContent);
-            const newBlock = this.editor.createTextBlock(sanitizedHtml);
+
+            const toolConfig = this.editor.getToolConfig("text");
+            const newBlock = TextBlock.create(sanitizedHtml, {
+                config: toolConfig?.config ?? {},
+                api: {
+                    removeBlock: (block) => this.editor.removeBlock(block),
+                    editor: this.editor
+                }
+            });
             this.editor.addBlockAfter(textBlock, newBlock);
 
             // addBlockAfter가 render()를 호출하므로 DOM이 업데이트된 후 포커스 설정
@@ -211,7 +219,14 @@ export default class KeyHandlerPlugin extends Plugin {
             event.preventDefault();
 
             // 리스트 블록이 비어있으면 텍스트 블록으로 전환
-            const newTextBlock = this.editor.createTextBlock("");
+            const toolConfig = this.editor.getToolConfig("text");
+            const newTextBlock = TextBlock.create("", {
+                config: toolConfig?.config ?? {},
+                api: {
+                    removeBlock: (block) => this.editor.removeBlock(block),
+                    editor: this.editor
+                }
+            });
             const index = this.editor.blocks.indexOf(block);
             this.editor.blocks.splice(index, 1, newTextBlock);
             this.editor.renderer.render(this.editor.blocks);

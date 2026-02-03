@@ -9,6 +9,9 @@ import Editor from "./core/Editor.js";
 // import "./blocks/ImageBlock.ts";
 // import "./blocks/VideoBlock.ts";
 import * as BlockFactory from "./blocks/BlockFactory.js"; // BlockFactory를 명확한 이름으로 임포트
+import TextBlock from "./blocks/TextBlock.js";
+import ImageBlock from "./blocks/ImageBlock.js";
+import VideoBlock from "./blocks/VideoBlock.js";
 
 // 에디터에 필요한 스타일시트 임포트
 import "./styles/editor.css";
@@ -23,7 +26,7 @@ import "./styles/blocks.css";
  * @property {function(string, object, object): BaseBlock} Blocks.createBlock - 새 블록 인스턴스를 생성하는 함수.
  * @property {function(object, object): BaseBlock} Blocks.createBlockFromJSON - JSON 데이터로부터 블록 인스턴스를 생성하는 함수.
  */
-export { Editor, BlockFactory as Blocks };
+export { Editor, BlockFactory as Blocks, TextBlock, ImageBlock, VideoBlock };
 
 /**
  * 기본 내보내기로 Editor 클래스를 제공합니다.

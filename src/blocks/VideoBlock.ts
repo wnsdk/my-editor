@@ -11,6 +11,24 @@ export default class VideoBlock extends BaseBlock {
     config: Partial<VideoToolConfig>;
     api: BlockInit["api"];
 
+    /**
+     * 기본 비디오 블록을 생성하는 정적 팩토리 메서드입니다.
+     */
+    static createDefault(src: string, init: BlockInit<VideoToolConfig>): VideoBlock {
+        const data: VideoBlockData = {
+            type: "video",
+            src,
+        };
+        return new VideoBlock(data, init);
+    }
+
+    /**
+     * 데이터를 기반으로 비디오 블록을 생성하는 정적 팩토리 메서드입니다.
+     */
+    static create(data: string | VideoBlockData, init: BlockInit<VideoToolConfig>): VideoBlock {
+        return new VideoBlock(data, init);
+    }
+
     constructor(
         data: string | VideoBlockData = "",
         init: BlockInit<VideoToolConfig>

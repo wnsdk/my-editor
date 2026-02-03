@@ -10,6 +10,20 @@ export default class TextBlock extends BaseBlock {
     api: BlockInit["api"];
     override el: HTMLDivElement;
 
+    /**
+     * 기본 텍스트 블록을 생성하는 정적 팩토리 메서드입니다.
+     */
+    static createDefault(init: BlockInit<TextToolConfig>): TextBlock {
+        return new TextBlock("", init);
+    }
+
+    /**
+     * 데이터를 기반으로 텍스트 블록을 생성하는 정적 팩토리 메서드입니다.
+     */
+    static create(data: string | TextBlockData, init: BlockInit<TextToolConfig>): TextBlock {
+        return new TextBlock(data, init);
+    }
+
     constructor(
         data: string | TextBlockData = "",
         init: BlockInit<TextToolConfig>

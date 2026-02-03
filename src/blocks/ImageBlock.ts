@@ -11,6 +11,28 @@ export default class ImageBlock extends BaseBlock {
     config: Partial<ImageToolConfig>;
     api: BlockInit["api"];
 
+    /**
+     * 기본 이미지 블록을 생성하는 정적 팩토리 메서드입니다.
+     */
+    static createDefault(src: string, init: BlockInit<ImageToolConfig>): ImageBlock {
+        const data: ImageBlockData = {
+            type: "image",
+            src,
+            alt: "",
+            width: null,
+            height: null,
+            align: "center",
+        };
+        return new ImageBlock(data, init);
+    }
+
+    /**
+     * 데이터를 기반으로 이미지 블록을 생성하는 정적 팩토리 메서드입니다.
+     */
+    static create(data: ImageBlockData, init: BlockInit<ImageToolConfig>): ImageBlock {
+        return new ImageBlock(data, init);
+    }
+
     constructor(
         data: ImageBlockData,
         init: BlockInit<ImageToolConfig>

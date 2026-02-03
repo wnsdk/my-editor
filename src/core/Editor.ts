@@ -287,64 +287,6 @@ export default class Editor {
         });
     }
 
-    createTextBlock(data: string | TextBlockData = ""): TextBlock {
-        const toolConfig = this.getToolConfig("text");
-
-        return new TextBlock(data, {
-            config: toolConfig?.config ?? {},
-            api: {
-                removeBlock: (block) => this.removeBlock(block),
-                editor: this
-            }
-        });
-    }
-
-    createDefaultImageBlock(src: string): ImageBlock {
-        const data: ImageBlockData = {
-            type: "image",
-            src,
-            alt: "",
-            width: null,
-            height: null,
-            align: "center",
-        };
-
-        return this.createImageBlock(data);
-    }
-
-    createImageBlock(data: ImageBlockData): ImageBlock {
-        const toolConfig = this.getToolConfig("image");
-
-        return new ImageBlock(data, {
-            config: toolConfig?.config ?? {},
-            api: {
-                editor: this,
-                removeBlock: (block) => this.removeBlock(block)
-            }
-        });
-    }
-
-    createDefaultVideoBlock(src: string): VideoBlock {
-        const data: VideoBlockData = {
-            type: "video",
-            src,
-        };
-
-        return this.createVideoBlock(data);
-    }
-
-    createVideoBlock(data: string | VideoBlockData): VideoBlock {
-        const toolConfig = this.getToolConfig("video");
-
-        return new VideoBlock(data, {
-            config: toolConfig?.config ?? {},
-            api: {
-                editor: this,
-                removeBlock: (block) => this.removeBlock(block)
-            }
-        });
-    }
-
 
     /**
      * 새 블록을 에디터에 삽입합니다.

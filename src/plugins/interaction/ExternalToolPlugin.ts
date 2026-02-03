@@ -1,6 +1,8 @@
 import Plugin from "../../core/Plugin";
 import Editor from "../../core/Editor";
 import {ImageToolConfig, ToolConfig, ToolType, VideoToolConfig} from "../../types";
+import ImageBlock from "../../blocks/ImageBlock";
+import VideoBlock from "../../blocks/VideoBlock";
 
 /**
  * 외부 UI 요소(버튼 등)와 에디터의 블록 삽입/업로드 기능을 연결하는 플러그인입니다.
@@ -117,9 +119,22 @@ export default class ExternalToolPlugin extends Plugin {
 
                 if (src) {
                     // 타입에 따라 적절한 블록 생성
+                    const toolConfig = this.editor.getToolConfig(type);
                     const block = type === "video"
-                        ? this.editor.createDefaultVideoBlock(src)
-                        : this.editor.createDefaultImageBlock(src);
+                        ? VideoBlock.createDefault(src, {
+                            config: toolConfig?.config ?? {},
+                            api: {
+                                editor: this.editor,
+                                removeBlock: (block) => this.editor.removeBlock(block)
+                            }
+                        })
+                        : ImageBlock.createDefault(src, {
+                            config: toolConfig?.config ?? {},
+                            api: {
+                                editor: this.editor,
+                                removeBlock: (block) => this.editor.removeBlock(block)
+                            }
+                        });
                     this.editor.insertBlock(block);
                 }
             } catch (err) {
