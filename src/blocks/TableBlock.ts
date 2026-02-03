@@ -228,7 +228,7 @@ export default class TableBlock extends BaseBlock {
         this.isResizing = true;
         this.resizingColIndex = parseInt(target.dataset["colIndex"] || "0", 10);
         this.startX = e.clientX;
-        this.startWidth = this.colWidths[this.resizingColIndex];
+        this.startWidth = this.colWidths[this.resizingColIndex] ?? 100;
 
         document.body.style.cursor = "col-resize";
         document.body.style.userSelect = "none";

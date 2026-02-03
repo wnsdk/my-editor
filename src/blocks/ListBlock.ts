@@ -1,17 +1,17 @@
-import BaseBlock from "./BaseBlock";
+import TextEditableBlock from "./TextEditableBlock";
 import { ListBlockData, BlockInit } from "../types/blocks";
 import { isListBlock } from "../utils/typeGuards";
 
-export default class ListBlock extends BaseBlock {
+export default class ListBlock extends TextEditableBlock {
     public style: 'ordered' | 'unordered';
     public html: string;
-    api: BlockInit["api"];
 
     constructor(data: ListBlockData, init: BlockInit) {
         super('list', data.depth || 0);
+        this.config = init.config;
+        this.api = init.api;
         this.style = data.style || 'unordered';
         this.html = data.html || "";
-        this.api = init.api;
     }
 
     render(): HTMLElement {
@@ -30,12 +30,9 @@ export default class ListBlock extends BaseBlock {
         bullet.style.userSelect = "none";
         bullet.contentEditable = "false";
 
-        const content = document.createElement("div");
-        content.classList.add("list-item-content");
-        if (!this.api.editor.readOnly) {
-            content.contentEditable = "true";
-        }
-        content.innerHTML = this.html || "<br>";
+        // TextEditableBlock의 createEditableElement 사용
+        const content = this.createEditableElement("div", "list-item-content");
+        this.setHtmlContent(content, this.html);
         content.style.flex = "1";
 
         itemRow.appendChild(bullet);
@@ -54,29 +51,28 @@ export default class ListBlock extends BaseBlock {
         super.mount(root, beforeElement);
     }
 
-    override focus(event?: Event): void {
-        if (!this.el) return;
-
-        super.focus(event);
-
-        // 현재 선택 영역 확인
-        const currentSelection = window.getSelection();
-        if (currentSelection && !currentSelection.isCollapsed) {
-            // 텍스트가 선택된 상태면 캐럿 배치를 하지 않음
-            return;
-        }
-
-        // 클릭 이벤트인 경우, 클릭한 위치에 캐럿 배치
+    /**
+     * TextEditableBlock의 handleCaretPositioning 오버라이드
+     * 리스트의 경우 .list-item-content 요소에 캐럿 배치
+     */
+    protected override handleCaretPositioning(event: Event | undefined, selection: any): void {
+        // 클릭 이벤트인 경우, 클릭한 위치에 자동으로 캐럿 배치됨
         if (event && event instanceof MouseEvent && event.type === 'click') {
-            // 클릭 위치에 자동으로 캐럿이 배치되므로 추가 작업 불필요
             return;
         }
 
-        // 클릭이 아닌 경우(예: 프로그래매틱 포커스)에만 첫 번째 위치로 이동
+        // 클릭이 아닌 경우 첫 번째 위치로 이동
         const firstContent = this.el.querySelector('.list-item-content');
         if (firstContent instanceof HTMLElement) {
             this.api.editor.selection.setRangeAtStart(firstContent);
         }
+    }
+
+    /**
+     * TextEditableBlock의 추상 메서드 구현: HTML 콘텐츠 반환
+     */
+    protected getHtmlContent(): string {
+        return this.html;
     }
 
     /**

@@ -40,7 +40,7 @@ export function getCaretCoordinates(): CaretCoordinates | null {
     // 캐럿이 텍스트 노드의 시작에 있거나 빈 요소 내에 있을 경우 getClientRects()가 비어있을 수 있음.
     // 이 경우 getBoundingClientRect()를 사용하여 더 견고하게 처리합니다.
     if (range.getClientRects().length > 0) {
-        rect = range.getClientRects()[0];
+        rect = range.getClientRects()[0] || null;
     } else if (range.startContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
         // 텍스트 노드 내에서 캐럿이 0 오프셋에 있는 경우
         // 임시로 범위를 확장하여 rect를 얻은 후 다시 축소

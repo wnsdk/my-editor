@@ -89,7 +89,8 @@ export default class History {
             return null;
         }
         this.currentIndex--;
-        return JSON.parse(this.historyStack[this.currentIndex]);
+        const state = this.historyStack[this.currentIndex];
+        return state ? JSON.parse(state) : null;
     }
 
     /**
@@ -101,7 +102,8 @@ export default class History {
             return null;
         }
         this.currentIndex++;
-        return JSON.parse(this.historyStack[this.currentIndex]);
+        const state = this.historyStack[this.currentIndex];
+        return state ? JSON.parse(state) : null;
     }
 
     /**

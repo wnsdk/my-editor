@@ -1,15 +1,12 @@
-import BaseBlock from "./BaseBlock";
-import { createDeleteButton } from "../utils/dom.js";
+import MediaBlock from "./MediaBlock";
 import {BlockInit, ImageBlockData, ImageToolConfig} from "../types";
 
 /**
  * 에디터의 이미지 블록을 나타내는 클래스입니다.
- * BaseBlock을 상속받아 이미지 표시 및 관련 기능을 제공합니다.
+ * MediaBlock을 상속받아 이미지 표시 및 관련 기능을 제공합니다.
  */
-export default class ImageBlock extends BaseBlock {
+export default class ImageBlock extends MediaBlock {
     data: ImageBlockData;
-    config: Partial<ImageToolConfig>;
-    api: BlockInit["api"];
 
     /**
      * 기본 이미지 블록을 생성하는 정적 팩토리 메서드입니다.
@@ -52,25 +49,22 @@ export default class ImageBlock extends BaseBlock {
             align: data.align ?? "center"
         };
 
-        // 1. 래퍼(wrapper) div 생성
-        this.el = document.createElement("div");
-        this.el.className = "block image-block-wrapper";
-        this.el.contentEditable = "false"; // 이 래퍼는 편집 불가능
-        this.el.draggable = true; // 드래그는 이 래퍼에서 처리
-
-        // 2. 내부 컨텐츠 div 생성
-        const contentWrapper = document.createElement("div");
-        contentWrapper.className = "image-block";
-        contentWrapper.classList.add(`align-${this.data.align}`);
-        this.el.appendChild(contentWrapper);
-
-        this._renderContent(contentWrapper); // 내부 컨텐츠 렌더링
+        // MediaBlock의 createWrapper 사용
+        const { content } = this.createWrapper(this.data.align);
+        this.renderContent(content);
     }
 
     /**
-     * 블록의 내부 컨텐츠를 렌더링합니다.
+     * MediaBlock의 추상 메서드 구현: 미디어 소스 반환
      */
-    private _renderContent(container: HTMLElement) {
+    protected getMediaSrc(): string {
+        return this.data.src;
+    }
+
+    /**
+     * MediaBlock의 추상 메서드 구현: 이미지 콘텐츠 렌더링
+     */
+    protected renderContent(container: HTMLElement): void {
         container.innerHTML = ""; // 기존 컨텐츠 초기화
 
         // 이미지가 있는 경우
@@ -79,14 +73,15 @@ export default class ImageBlock extends BaseBlock {
         }
         // 이미지가 없는 경우 (플레이스홀더 표시)
         else {
-            container.innerHTML = `<div class="image-placeholder">No Image Selected</div>`;
+            const placeholder = this.createPlaceholder("No Image Selected");
+            container.appendChild(placeholder);
         }
     }
 
     /**
      * 이미지 요소를 생성하고 컨테이너에 추가합니다.
      */
-    private _renderImageElement(container: HTMLElement) {
+    private _renderImageElement(container: HTMLElement): void {
         // 기본 뷰: img 태그 생성
         const img = document.createElement("img");
         img.src = this.data.src;
@@ -107,24 +102,7 @@ export default class ImageBlock extends BaseBlock {
         }
 
         container.appendChild(img);
-
-        this._appendDeleteButton(container);
-    }
-
-    /**
-     * 블록 삭제 버튼을 생성하고 컨테이너에 추가합니다.
-     */
-    private _appendDeleteButton(container: HTMLElement) {
-        if (!this.config.showDeleteButton) return;
-
-        const btn = createDeleteButton();
-        btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.api.removeBlock(this);
-        });
-
-        container.appendChild(btn);
+        this.appendDeleteButton(container); // MediaBlock의 메서드 사용
     }
 
     /**
