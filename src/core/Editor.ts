@@ -23,7 +23,7 @@ import {
     ExternalToolPlugin, ImageBlockPlugin,
     KeyHandlerPlugin, ListBlockPlugin,
     CopyPastePlugin, PlaceholderPlugin, TextBlockPlugin, ToolbarPlugin, VideoBlockPlugin,
-    SelectionPlugin
+    SelectionPlugin, TableBlockPlugin
 } from "../plugins";
 import { isListBlock } from "../utils/typeGuards.js";
 
@@ -184,6 +184,7 @@ export default class Editor {
             ImageBlockPlugin,
             VideoBlockPlugin,
             ListBlockPlugin,
+            TableBlockPlugin,
         ];
 
         if (this.toolbarEnabled && !this.readOnly) {

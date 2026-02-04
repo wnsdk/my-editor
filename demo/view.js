@@ -40,7 +40,8 @@ async function initViewer() {
                 config: {
                     showDeleteButton: false
                 }
-            }
+            },
+            table: {}
         }
     });
 
