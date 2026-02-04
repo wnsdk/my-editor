@@ -86,6 +86,7 @@ export default class ToolbarPlugin extends Plugin {
             <button data-cmd="italic"><i>I</i></button>
             <button data-cmd="underline"><u>U</u></button>
             <button data-cmd="strikeThrough"><s>S</s></button>
+            <button data-cmd="createLink" title="링크">🔗</button>
         `;
 
         // 툴바 클릭 시 포커스 잃지 않게
@@ -129,9 +130,13 @@ export default class ToolbarPlugin extends Plugin {
         if (!command) return;
 
         try {
-            // NOTE: deprecated지만 현재는 가장 단순
-            document.execCommand(command, false);
-            this.editor.saveHistory();
+            if (command === "createLink") {
+                this.handleCreateLink();
+            } else {
+                // NOTE: deprecated지만 현재는 가장 단순
+                document.execCommand(command, false);
+                this.editor.saveHistory();
+            }
         } catch (err) {
             console.error(
                 `ToolbarPlugin: command "${command}" failed`,
@@ -139,4 +144,60 @@ export default class ToolbarPlugin extends Plugin {
             );
         }
     };
+
+    /**
+     * 링크 생성을 처리합니다.
+     */
+    private handleCreateLink() {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return;
+
+        const range = selection.getRangeAt(0);
+        const selectedText = range.toString();
+
+        // 선택된 텍스트가 없으면 무시
+        if (!selectedText.trim()) {
+            alert("링크를 추가할 텍스트를 선택하세요.");
+            return;
+        }
+
+        // 기존 링크가 있는지 확인
+        let existingLink: HTMLAnchorElement | null = null;
+        let node = range.commonAncestorContainer;
+
+        // 텍스트 노드인 경우 부모 요소를 확인
+        if (node.nodeType === Node.TEXT_NODE) {
+            node = node.parentElement!;
+        }
+
+        // 선택 영역에서 가장 가까운 <a> 태그 찾기
+        if (node instanceof HTMLElement) {
+            existingLink = node.closest("a");
+        }
+
+        const currentUrl = existingLink?.href || "";
+        const url = prompt("링크 URL을 입력하세요:", currentUrl);
+
+        if (url === null) return; // 취소
+
+        if (url.trim() === "") {
+            // URL이 비어있으면 링크 제거
+            if (existingLink) {
+                const text = document.createTextNode(existingLink.textContent || "");
+                existingLink.parentNode?.replaceChild(text, existingLink);
+            }
+        } else {
+            // 링크 생성 또는 수정
+            if (existingLink) {
+                // 기존 링크 수정
+                existingLink.href = url;
+            } else {
+                // 새 링크 생성
+                document.execCommand("createLink", false, url);
+            }
+        }
+
+        this.editor.saveHistory();
+        this.hideToolbar();
+    }
 }
