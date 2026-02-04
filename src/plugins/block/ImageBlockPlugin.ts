@@ -151,6 +151,10 @@ export default class ImageBlockPlugin extends Plugin {
         const containerEl = this.currentMediaEl.parentElement;
         if (!containerEl) return;
 
+        // 래퍼 찾기 (.image-block-wrapper 또는 .video-block-wrapper)
+        const wrapperEl = containerEl.parentElement;
+        if (!wrapperEl) return;
+
         // 가득 채우기 처리
         if (action === "fill") {
             containerEl.classList.add("fill-width");
@@ -159,27 +163,27 @@ export default class ImageBlockPlugin extends Plugin {
             this.currentMediaEl.style.margin = "0";
             this.currentMediaEl.style.marginLeft = "";
             this.currentMediaEl.style.marginRight = "";
+            wrapperEl.style.textAlign = "";
             return;
         }
 
-        // 정렬 처리 (임시 DOM 조작)
+        // 정렬 처리: wrapper에 text-align 적용
         containerEl.classList.remove("fill-width");
         this.currentMediaEl.classList.remove("fill-width"); // 가득 채우기 클래스 제거
-        this.currentMediaEl.style.display = "block";
-        this.currentMediaEl.style.margin = "0 auto";
+        this.currentMediaEl.style.width = ""; // 커스텀 크기 제거
+        this.currentMediaEl.style.height = ""; // 커스텀 크기 제거
+        containerEl.style.display = ""; // display 스타일 초기화
+        containerEl.style.justifyContent = ""; // justifyContent 초기화
 
         if (action === "left") {
-            this.currentMediaEl.style.marginLeft = "0";
-            this.currentMediaEl.style.marginRight = "auto";
+            wrapperEl.style.textAlign = "left";
+        } else if (action === "center") {
+            wrapperEl.style.textAlign = "center";
+        } else if (action === "right") {
+            wrapperEl.style.textAlign = "right";
         }
 
-        if (action === "right") {
-            this.currentMediaEl.style.marginLeft = "auto";
-            this.currentMediaEl.style.marginRight = "0";
-        }
-
-        // TODO: block.data.align = action
-        // → 이후 renderer 기반으로 리팩토링
+        this.editor.saveHistory();
     };
 
     /* ================================
