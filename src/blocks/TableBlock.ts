@@ -386,9 +386,22 @@ export default class TableBlock extends BaseBlock {
     /**
      * 블록에 포커스를 설정합니다.
      */
-    override focus(): void {
+    override focus(event?: Event): void {
         if (!this.el) return;
 
+        // 클릭 이벤트가 있고, 클릭된 요소가 테이블 셀인 경우
+        // 해당 셀에 포커스를 유지 (자동으로 포커스 이동하지 않음)
+        if (event instanceof MouseEvent) {
+            const target = event.target as HTMLElement;
+            const clickedCell = target.closest(".table-cell-content");
+
+            // 셀이 클릭된 경우, 이미 해당 셀에 포커스가 가 있으므로 추가 작업 불필요
+            if (clickedCell instanceof HTMLElement && this.el.contains(clickedCell)) {
+                return;
+            }
+        }
+
+        // 그 외의 경우 (프로그래밍 방식의 포커스 등) 첫 번째 셀로 포커스
         const firstCell = this.el.querySelector(".table-cell-content");
         if (firstCell instanceof HTMLElement) {
             firstCell.focus();
