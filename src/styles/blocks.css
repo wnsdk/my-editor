@@ -57,6 +57,19 @@ ol.list-block {
     border-radius: 10px;
 }
 
+/* 가득 채우기 스타일 */
+.image-block.fill-width,
+.video-block.fill-width {
+    display: flex;
+    width: 100%;
+}
+
+.image-block > img.fill-width,
+.video-block > video.fill-width {
+    width: 100%;
+    max-width: none;
+}
+
 .image-block-wrapper,
 .video-block-wrapper {
     padding: 2px;

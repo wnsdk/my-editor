@@ -51,6 +51,7 @@ export default class ImageBlockPlugin extends Plugin {
             <button data-action="left">왼쪽</button>
             <button data-action="center">가운데</button>
             <button data-action="right">오른쪽</button>
+            <button data-action="fill">가득 채우기</button>
             <button data-action="remove">삭제</button>
         `;
         return el;
@@ -135,7 +136,24 @@ export default class ImageBlockPlugin extends Plugin {
 
         if (!this.currentMediaEl) return;
 
+        // 미디어 요소의 부모 컨테이너 찾기 (.image-block 또는 .video-block)
+        const containerEl = this.currentMediaEl.parentElement;
+        if (!containerEl) return;
+
+        // 가득 채우기 처리
+        if (action === "fill") {
+            containerEl.classList.add("fill-width");
+            this.currentMediaEl.classList.add("fill-width");
+            this.currentMediaEl.style.display = "block";
+            this.currentMediaEl.style.margin = "0";
+            this.currentMediaEl.style.marginLeft = "";
+            this.currentMediaEl.style.marginRight = "";
+            return;
+        }
+
         // 정렬 처리 (임시 DOM 조작)
+        containerEl.classList.remove("fill-width");
+        this.currentMediaEl.classList.remove("fill-width"); // 가득 채우기 클래스 제거
         this.currentMediaEl.style.display = "block";
         this.currentMediaEl.style.margin = "0 auto";
 
