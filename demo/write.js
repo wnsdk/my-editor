@@ -1,4 +1,4 @@
-import Editor, { ImageBlock, VideoBlock } from '../dist/editor.esm.js';
+import Editor, { ImageBlock, VideoBlock, TableBlock } from '../dist/editor.esm.js';
 import { initDB, saveFileToDB, getFileFromDB, generateFileId } from './db.js';
 
 const STORAGE_KEY = 'editor-demo-data';
@@ -84,6 +84,14 @@ async function initEditor(initialData = null) {
                             return { success: 1, file: { url: blobUrl } };
                         }
                     },
+                }
+            },
+            table: {
+                toolbar: false,
+                config: {
+                    defaultRows: 2,
+                    defaultCols: 2,
+                    minCellWidth: 50
                 }
             }
         }
@@ -174,7 +182,22 @@ function handleVideoSelectOnWeb(e) {
     document.getElementById('video-input').value = '';
 }
 
+function handleTableInsert() {
+    if (editor) {
+        const toolConfig = editor.getToolConfig("table");
+        const block = TableBlock.createDefault({
+            config: toolConfig?.config ?? {},
+            api: {
+                editor: editor,
+                removeBlock: (block) => editor.removeBlock(block)
+            }
+        });
+        editor.insertBlock(block);
+    }
+}
+
 document.getElementById('btn-save').addEventListener('click', handleSave);
 document.getElementById('btn-clear').addEventListener('click', handleClear);
+document.getElementById('selectTableButton').addEventListener('click', handleTableInsert);
 
 initDB().then(() => initEditor());
