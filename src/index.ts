@@ -16,6 +16,7 @@ import TextBlock from "./blocks/editable/TextBlock.js";
 import ImageBlock from "./blocks/media/ImageBlock.js";
 import VideoBlock from "./blocks/media/VideoBlock.js";
 import ListBlock from "./blocks/editable/ListBlock.js";
+import TableBlock from "./blocks/TableBlock.js";
 
 // 에디터에 필요한 스타일시트 임포트
 import "./styles/editor.css";
@@ -39,7 +40,8 @@ export {
     TextBlock,
     ImageBlock,
     VideoBlock,
-    ListBlock
+    ListBlock,
+    TableBlock
 };
 
 /**

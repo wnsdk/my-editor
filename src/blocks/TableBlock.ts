@@ -20,6 +20,20 @@ export default class TableBlock extends BaseBlock {
     private startX: number = 0;
     private startWidth: number = 0;
 
+    /**
+     * 기본 테이블 블록을 생성하는 정적 팩토리 메서드입니다.
+     */
+    static createDefault(init: BlockInit<TableToolConfig>): TableBlock {
+        return new TableBlock({}, init);
+    }
+
+    /**
+     * 데이터를 기반으로 테이블 블록을 생성하는 정적 팩토리 메서드입니다.
+     */
+    static create(data: TableBlockData, init: BlockInit<TableToolConfig>): TableBlock {
+        return new TableBlock(data, init);
+    }
+
     constructor(data: Partial<TableBlockData>, init: BlockInit<TableToolConfig>) {
         super("table", data.depth || 0);
 
