@@ -200,4 +200,28 @@ document.getElementById('btn-save').addEventListener('click', handleSave);
 document.getElementById('btn-clear').addEventListener('click', handleClear);
 document.getElementById('selectTableButton').addEventListener('click', handleTableInsert);
 
-initDB().then(() => initEditor());
+async function loadSavedData() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+
+    if (!saved) {
+        await initEditor();
+        return;
+    }
+
+    const blocks = JSON.parse(saved);
+
+    // IndexedDB에서 파일 복원
+    for (const block of blocks) {
+        if ((block.type === 'image' || block.type === 'video') && block.fileId) {
+            const record = await getFileFromDB(block.fileId);
+            if (record) {
+                const blobUrl = URL.createObjectURL(record.file);
+                block.src = blobUrl;
+            }
+        }
+    }
+
+    await initEditor(blocks);
+}
+
+initDB().then(() => loadSavedData());
