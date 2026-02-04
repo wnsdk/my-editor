@@ -9,3 +9,109 @@
 .editor-image-toolbar button {
     font-size: 12px;
 }
+
+/* 미디어 크기 조절 모달 */
+.media-resize-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    min-width: 300px;
+}
+
+.media-resize-modal.hidden {
+    display: none;
+}
+
+.media-resize-modal h3 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.media-resize-modal .input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.media-resize-modal label {
+    min-width: 50px;
+    font-size: 14px;
+}
+
+.media-resize-modal input[type="number"] {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.media-resize-modal .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.media-resize-modal .checkbox-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.media-resize-modal .checkbox-row label {
+    min-width: auto;
+    cursor: pointer;
+}
+
+.media-resize-modal .button-row {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.media-resize-modal button {
+    padding: 6px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.media-resize-modal button:hover {
+    background: #f5f5f5;
+}
+
+.media-resize-modal button.primary {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.media-resize-modal button.primary:hover {
+    background: #0056b3;
+}
+
+.media-resize-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+}
+
+.media-resize-overlay.hidden {
+    display: none;
+}

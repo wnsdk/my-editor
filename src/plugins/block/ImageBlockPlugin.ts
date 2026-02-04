@@ -13,6 +13,9 @@ export default class ImageBlockPlugin extends Plugin {
     private toolbarEl: HTMLElement | null = null;
     private currentBlock: BaseBlock | null = null;
     private currentMediaEl: HTMLElement | null = null;
+    private resizeModalEl: HTMLElement | null = null;
+    private resizeOverlayEl: HTMLElement | null = null;
+    private originalAspectRatio: number = 1;
 
     constructor(editor: Editor) {
         super(editor);
@@ -38,6 +41,8 @@ export default class ImageBlockPlugin extends Plugin {
         this.editor.root.removeEventListener("click", this.onRootClick);
         document.removeEventListener("scroll", this.hideToolbar);
         this.toolbarEl?.remove();
+        this.resizeModalEl?.remove();
+        this.resizeOverlayEl?.remove();
     }
 
     /* ================================
@@ -52,6 +57,7 @@ export default class ImageBlockPlugin extends Plugin {
             <button data-action="center">가운데</button>
             <button data-action="right">오른쪽</button>
             <button data-action="fill">가득 채우기</button>
+            <button data-action="resize">크기 조절</button>
             <button data-action="remove">삭제</button>
         `;
         return el;
@@ -134,6 +140,11 @@ export default class ImageBlockPlugin extends Plugin {
             return;
         }
 
+        if (action === "resize") {
+            this.showResizeModal();
+            return;
+        }
+
         if (!this.currentMediaEl) return;
 
         // 미디어 요소의 부모 컨테이너 찾기 (.image-block 또는 .video-block)
@@ -170,6 +181,131 @@ export default class ImageBlockPlugin extends Plugin {
         // TODO: block.data.align = action
         // → 이후 renderer 기반으로 리팩토링
     };
+
+    /* ================================
+     * Resize Modal
+     * ================================ */
+
+    private showResizeModal() {
+        if (!this.currentMediaEl) return;
+
+        // 현재 미디어의 실제 크기 가져오기
+        const currentWidth = this.currentMediaEl.offsetWidth;
+        const currentHeight = this.currentMediaEl.offsetHeight;
+        this.originalAspectRatio = currentWidth / currentHeight;
+
+        // 에디터 최대 너비 가져오기
+        const editorWidth = this.editor.root.offsetWidth;
+
+        // 오버레이 생성
+        if (!this.resizeOverlayEl) {
+            this.resizeOverlayEl = document.createElement("div");
+            this.resizeOverlayEl.className = "media-resize-overlay";
+            document.body.appendChild(this.resizeOverlayEl);
+            this.resizeOverlayEl.addEventListener("click", () => this.hideResizeModal());
+        }
+        this.resizeOverlayEl.classList.remove("hidden");
+
+        // 모달 생성
+        if (!this.resizeModalEl) {
+            this.resizeModalEl = document.createElement("div");
+            this.resizeModalEl.className = "media-resize-modal";
+            this.resizeModalEl.innerHTML = `
+                <h3>크기 조절</h3>
+                <div class="input-row">
+                    <label>너비(px)</label>
+                    <input type="number" id="resize-width" min="10" max="${editorWidth}" value="${currentWidth}">
+                </div>
+                <div class="input-row">
+                    <label>높이(px)</label>
+                    <input type="number" id="resize-height" min="10" value="${currentHeight}">
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="maintain-ratio" checked>
+                    <label for="maintain-ratio">비율 유지</label>
+                </div>
+                <div class="button-row">
+                    <button id="resize-cancel">취소</button>
+                    <button id="resize-apply" class="primary">적용</button>
+                </div>
+            `;
+            document.body.appendChild(this.resizeModalEl);
+
+            // 이벤트 리스너 등록
+            const widthInput = this.resizeModalEl.querySelector("#resize-width") as HTMLInputElement;
+            const heightInput = this.resizeModalEl.querySelector("#resize-height") as HTMLInputElement;
+            const ratioCheckbox = this.resizeModalEl.querySelector("#maintain-ratio") as HTMLInputElement;
+
+            widthInput.addEventListener("input", () => {
+                if (ratioCheckbox.checked) {
+                    const newHeight = Math.round(parseInt(widthInput.value) / this.originalAspectRatio);
+                    heightInput.value = newHeight.toString();
+                }
+            });
+
+            heightInput.addEventListener("input", () => {
+                if (ratioCheckbox.checked) {
+                    const newWidth = Math.round(parseInt(heightInput.value) * this.originalAspectRatio);
+                    widthInput.value = Math.min(newWidth, editorWidth).toString();
+                }
+            });
+
+            this.resizeModalEl.querySelector("#resize-cancel")?.addEventListener("click", () => {
+                this.hideResizeModal();
+            });
+
+            this.resizeModalEl.querySelector("#resize-apply")?.addEventListener("click", () => {
+                this.applyResize();
+            });
+        } else {
+            // 기존 모달 업데이트
+            const widthInput = this.resizeModalEl.querySelector("#resize-width") as HTMLInputElement;
+            const heightInput = this.resizeModalEl.querySelector("#resize-height") as HTMLInputElement;
+            widthInput.max = editorWidth.toString();
+            widthInput.value = currentWidth.toString();
+            heightInput.value = currentHeight.toString();
+        }
+
+        this.resizeModalEl.classList.remove("hidden");
+    }
+
+    private hideResizeModal() {
+        this.resizeModalEl?.classList.add("hidden");
+        this.resizeOverlayEl?.classList.add("hidden");
+    }
+
+    private applyResize() {
+        if (!this.currentMediaEl || !this.resizeModalEl) return;
+
+        const widthInput = this.resizeModalEl.querySelector("#resize-width") as HTMLInputElement;
+        const heightInput = this.resizeModalEl.querySelector("#resize-height") as HTMLInputElement;
+
+        const newWidth = parseInt(widthInput.value);
+        const newHeight = parseInt(heightInput.value);
+
+        if (isNaN(newWidth) || isNaN(newHeight) || newWidth < 10 || newHeight < 10) {
+            alert("너비와 높이는 최소 10px 이상이어야 합니다.");
+            return;
+        }
+
+        const editorWidth = this.editor.root.offsetWidth;
+        if (newWidth > editorWidth) {
+            alert(`너비는 에디터 너비(${editorWidth}px)를 초과할 수 없습니다.`);
+            return;
+        }
+
+        // 크기 적용
+        this.currentMediaEl.style.width = `${newWidth}px`;
+        this.currentMediaEl.style.height = `${newHeight}px`;
+
+        // fill-width 클래스 제거 (커스텀 크기 설정)
+        const containerEl = this.currentMediaEl.parentElement;
+        containerEl?.classList.remove("fill-width");
+        this.currentMediaEl.classList.remove("fill-width");
+
+        this.hideResizeModal();
+        this.editor.saveHistory();
+    }
 
     /* ================================
      * Tool Settings
