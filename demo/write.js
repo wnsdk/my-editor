@@ -132,7 +132,7 @@ async function handleSave() {
 function handleClear() {
     if (confirm('에디터 내용을 모두 지우시겠습니까?')) {
         tempFiles.clear();
-        initEditor();
+        editor.clear();
     }
 }
 

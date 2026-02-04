@@ -703,7 +703,14 @@ export default class Editor {
         types.forEach(type => this._notifyBlockCountChange(type));
     }
 
-    
+    /**
+     * 에디터의 모든 블록을 제거하고 초기 상태로 되돌립니다.
+     */
+    clear(): void {
+        this.load([]);
+    }
+
+
 
 
 
