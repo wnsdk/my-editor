@@ -1,6 +1,7 @@
 import BaseBlock from "./BaseBlock";
 import { BlockInit, TableBlockData, TableCellData } from "../types/blocks";
 import { TableToolConfig } from "../types/tools";
+import { setBlockId } from "../utils/dom";
 
 /**
  * 에디터의 테이블 블록을 나타내는 클래스입니다.
@@ -366,6 +367,9 @@ export default class TableBlock extends BaseBlock {
         this._bindEvents();
 
         if (parent && this.el) {
+            // 새로 생성된 요소에 block ID 재설정
+            setBlockId(this.el, this.id);
+
             if (nextSibling) {
                 parent.insertBefore(this.el, nextSibling);
             } else {
