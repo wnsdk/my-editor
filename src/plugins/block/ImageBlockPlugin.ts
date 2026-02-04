@@ -163,15 +163,31 @@ export default class ImageBlockPlugin extends Plugin {
             this.currentMediaEl.style.margin = "0";
             this.currentMediaEl.style.marginLeft = "";
             this.currentMediaEl.style.marginRight = "";
+            this.currentMediaEl.style.width = ""; // 커스텀 크기 제거
+            this.currentMediaEl.style.height = ""; // 커스텀 크기 제거
             wrapperEl.style.textAlign = "";
+            this.editor.saveHistory();
             return;
         }
 
         // 정렬 처리: wrapper에 text-align 적용
         containerEl.classList.remove("fill-width");
         this.currentMediaEl.classList.remove("fill-width"); // 가득 채우기 클래스 제거
-        this.currentMediaEl.style.width = ""; // 커스텀 크기 제거
-        this.currentMediaEl.style.height = ""; // 커스텀 크기 제거
+
+        // 커스텀 크기가 설정되어 있지 않은 경우에만 제거
+        // (px 단위로 명시적으로 설정된 경우 유지)
+        const hasCustomWidth = this.currentMediaEl.style.width &&
+                               this.currentMediaEl.style.width.endsWith('px');
+        const hasCustomHeight = this.currentMediaEl.style.height &&
+                                this.currentMediaEl.style.height.endsWith('px');
+
+        if (!hasCustomWidth) {
+            this.currentMediaEl.style.width = "";
+        }
+        if (!hasCustomHeight) {
+            this.currentMediaEl.style.height = "";
+        }
+
         containerEl.style.display = ""; // display 스타일 초기화
         containerEl.style.justifyContent = ""; // justifyContent 초기화
 
