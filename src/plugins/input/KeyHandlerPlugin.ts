@@ -399,6 +399,11 @@ export default class KeyHandlerPlugin extends Plugin {
         const isLeft = key === "ArrowLeft";
         const isRight = key === "ArrowRight";
 
+        // 테이블 블록은 자체적으로 방향키를 처리하므로 여기서는 처리하지 않음
+        if (block.type === "table") {
+            return;
+        }
+
         let shouldMoveBlock = false;
         let targetIndex = -1;
 

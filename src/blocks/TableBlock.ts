@@ -169,6 +169,9 @@ export default class TableBlock extends BaseBlock {
         // 셀 입력 이벤트
         this.el.addEventListener("input", this._onCellInput);
 
+        // 방향키 이동 이벤트
+        this.el.addEventListener("keydown", this._onKeyDown);
+
         // 열 리사이즈 이벤트
         this.el.addEventListener("mousedown", this._onResizeStart);
         document.addEventListener("mousemove", this._onResizeMove);
@@ -200,6 +203,173 @@ export default class TableBlock extends BaseBlock {
             this.rows[rowIndex][colIndex].html = target.innerHTML;
         }
     };
+
+    /**
+     * 키보드 이벤트를 처리합니다 (방향키 이동).
+     */
+    private _onKeyDown = (e: KeyboardEvent): void => {
+        const target = e.target as HTMLElement;
+        if (!target.classList.contains("table-cell-content")) return;
+
+        const td = target.closest("td");
+        if (!td) return;
+
+        const rowIndex = parseInt(td.dataset["row"] || "0", 10);
+        const colIndex = parseInt(td.dataset["col"] || "0", 10);
+
+        let newRowIndex = rowIndex;
+        let newColIndex = colIndex;
+        let shouldMove = false;
+
+        const colCount = this.rows[0]?.length || 0;
+
+        // 현재 커서 위치 확인
+        const selection = window.getSelection();
+        const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+
+        // 방향키 처리
+        switch (e.key) {
+            case "ArrowUp":
+                // 첫 번째 행이 아니면 위 셀로 이동
+                if (rowIndex > 0) {
+                    newRowIndex = rowIndex - 1;
+                    shouldMove = true;
+                }
+                // 첫 번째 행이면 기본 동작 허용 (이전 블록으로 이동)
+                break;
+            case "ArrowDown":
+                // 마지막 행이 아니면 아래 셀로 이동
+                if (rowIndex < this.rows.length - 1) {
+                    newRowIndex = rowIndex + 1;
+                    shouldMove = true;
+                }
+                // 마지막 행이면 기본 동작 허용 (다음 블록으로 이동)
+                break;
+            case "ArrowLeft":
+                // 커서가 셀의 시작 위치에 있는지 확인
+                const isAtStart = this._isCursorAtStart(target, range);
+
+                if (isAtStart && colIndex > 0) {
+                    // 첫 번째 열이 아니면 이전 셀로 이동
+                    newColIndex = colIndex - 1;
+                    shouldMove = true;
+                } else if (!isAtStart) {
+                    // 커서가 셀 시작이 아니면 기본 동작 (셀 내에서 이동)
+                    return;
+                }
+                // 첫 번째 열이고 커서가 시작이면 기본 동작 허용 (이전 블록으로 이동)
+                break;
+            case "ArrowRight":
+                // 커서가 셀의 끝 위치에 있는지 확인
+                const isAtEnd = this._isCursorAtEnd(target, range);
+
+                if (isAtEnd && colIndex < colCount - 1) {
+                    // 마지막 열이 아니면 다음 셀로 이동
+                    newColIndex = colIndex + 1;
+                    shouldMove = true;
+                } else if (!isAtEnd) {
+                    // 커서가 셀 끝이 아니면 기본 동작 (셀 내에서 이동)
+                    return;
+                }
+                // 마지막 열이고 커서가 끝이면 기본 동작 허용 (다음 블록으로 이동)
+                break;
+            case "Tab":
+                e.preventDefault();
+                // Tab: 다음 셀로 이동 (오른쪽 -> 다음 행의 첫 번째 셀)
+                if (colIndex < colCount - 1) {
+                    newColIndex = colIndex + 1;
+                } else if (rowIndex < this.rows.length - 1) {
+                    newRowIndex = rowIndex + 1;
+                    newColIndex = 0;
+                }
+                shouldMove = true;
+                break;
+        }
+
+        if (shouldMove && (newRowIndex !== rowIndex || newColIndex !== colIndex)) {
+            e.preventDefault();
+            this._moveFocusToCell(newRowIndex, newColIndex);
+        }
+    };
+
+    /**
+     * 커서가 셀의 시작 위치에 있는지 확인합니다.
+     */
+    private _isCursorAtStart(element: HTMLElement, range: Range | null): boolean {
+        if (!range || !range.collapsed) return false;
+
+        // range의 startContainer가 element의 첫 번째 텍스트 노드이고
+        // startOffset이 0이면 시작 위치
+        const firstTextNode = this._getFirstTextNode(element);
+        return range.startContainer === firstTextNode && range.startOffset === 0;
+    }
+
+    /**
+     * 커서가 셀의 끝 위치에 있는지 확인합니다.
+     */
+    private _isCursorAtEnd(element: HTMLElement, range: Range | null): boolean {
+        if (!range || !range.collapsed) return false;
+
+        // range의 startContainer가 element의 마지막 텍스트 노드이고
+        // startOffset이 해당 노드의 길이와 같으면 끝 위치
+        const lastTextNode = this._getLastTextNode(element);
+        if (!lastTextNode) return true;
+
+        return range.startContainer === lastTextNode &&
+               range.startOffset === (lastTextNode.textContent?.length || 0);
+    }
+
+    /**
+     * 요소의 첫 번째 텍스트 노드를 가져옵니다.
+     */
+    private _getFirstTextNode(element: HTMLElement): Node | null {
+        const walker = document.createTreeWalker(
+            element,
+            NodeFilter.SHOW_TEXT,
+            null
+        );
+        return walker.nextNode();
+    }
+
+    /**
+     * 요소의 마지막 텍스트 노드를 가져옵니다.
+     */
+    private _getLastTextNode(element: HTMLElement): Node | null {
+        const walker = document.createTreeWalker(
+            element,
+            NodeFilter.SHOW_TEXT,
+            null
+        );
+        let lastNode: Node | null = null;
+        let node: Node | null;
+        while (node = walker.nextNode()) {
+            lastNode = node;
+        }
+        return lastNode;
+    }
+
+    /**
+     * 특정 셀로 포커스를 이동합니다.
+     */
+    private _moveFocusToCell(rowIndex: number, colIndex: number): void {
+        if (!this.el) return;
+
+        const targetCell = this.el.querySelector(
+            `td[data-row="${rowIndex}"][data-col="${colIndex}"] .table-cell-content`
+        );
+
+        if (targetCell instanceof HTMLElement) {
+            targetCell.focus();
+
+            // 캐럿을 셀 시작 위치로
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(targetCell);
+            range.collapse(true);
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+        }
+    }
 
     /**
      * 툴바 버튼 클릭을 처리합니다.
