@@ -15,6 +15,9 @@ export default class VideoBlock extends MediaBlock {
         const data: VideoBlockData = {
             type: "video",
             src,
+            width: null,
+            height: null,
+            align: "center",
         };
         return new VideoBlock(data, init);
     }
@@ -39,11 +42,14 @@ export default class VideoBlock extends MediaBlock {
         this.data = {
             type: 'video',
             src: typeof data === "string" ? data : data.src ?? "",
-            posterUrl: typeof data === "string" ? undefined : data.posterUrl
+            posterUrl: typeof data === "string" ? undefined : data.posterUrl,
+            width: typeof data === "string" ? null : data.width ?? null,
+            height: typeof data === "string" ? null : data.height ?? null,
+            align: typeof data === "string" ? "center" : data.align ?? "center"
         };
 
         // MediaBlock의 createWrapper 사용
-        const { content } = this.createWrapper();
+        const { content } = this.createWrapper(this.data.align);
         this.renderContent(content);
     }
 
@@ -79,6 +85,18 @@ export default class VideoBlock extends MediaBlock {
             video.poster = this.data.posterUrl;
         }
 
+        // width, height 적용
+        if (this.data.width !== null && this.data.width !== undefined) {
+            video.style.width = typeof this.data.width === "number"
+                ? `${this.data.width}px`
+                : this.data.width;
+        }
+        if (this.data.height !== null && this.data.height !== undefined) {
+            video.style.height = typeof this.data.height === "number"
+                ? `${this.data.height}px`
+                : this.data.height;
+        }
+
         const source = document.createElement("source");
         source.src = this.data.src;
         video.appendChild(source);
@@ -95,9 +113,7 @@ export default class VideoBlock extends MediaBlock {
     toJSON(): VideoBlockData {
         return {
             id: this.id,
-            type: "video",
-            src: this.data.src,
-            posterUrl: this.data.posterUrl,
+            ...this.data,
             depth: this.depth
         };
     }

@@ -1,6 +1,7 @@
 import Plugin from "../../core/Plugin";
 import Editor from "../../core/Editor";
 import ImageBlock from "../../blocks/media/ImageBlock";
+import VideoBlock from "../../blocks/media/VideoBlock";
 import { registerBlock } from "../../blocks/BlockFactory";
 import { getBlockElementOf } from "../../utils/dom";
 import { ImageToolConfig, ToolConfig } from "../../types";
@@ -166,6 +167,18 @@ export default class ImageBlockPlugin extends Plugin {
             this.currentMediaEl.style.width = ""; // 커스텀 크기 제거
             this.currentMediaEl.style.height = ""; // 커스텀 크기 제거
             wrapperEl.style.textAlign = "";
+
+            // 블록 데이터 업데이트
+            if (this.currentBlock.type === 'image') {
+                (this.currentBlock as ImageBlock).data.width = null;
+                (this.currentBlock as ImageBlock).data.height = null;
+                (this.currentBlock as ImageBlock).data.align = 'center';
+            } else if (this.currentBlock.type === 'video') {
+                (this.currentBlock as VideoBlock).data.width = null;
+                (this.currentBlock as VideoBlock).data.height = null;
+                (this.currentBlock as VideoBlock).data.align = 'center';
+            }
+
             this.editor.saveHistory();
             return;
         }
@@ -193,10 +206,25 @@ export default class ImageBlockPlugin extends Plugin {
 
         if (action === "left") {
             wrapperEl.style.textAlign = "left";
+            if (this.currentBlock.type === 'image') {
+                (this.currentBlock as ImageBlock).data.align = 'left';
+            } else if (this.currentBlock.type === 'video') {
+                (this.currentBlock as VideoBlock).data.align = 'left';
+            }
         } else if (action === "center") {
             wrapperEl.style.textAlign = "center";
+            if (this.currentBlock.type === 'image') {
+                (this.currentBlock as ImageBlock).data.align = 'center';
+            } else if (this.currentBlock.type === 'video') {
+                (this.currentBlock as VideoBlock).data.align = 'center';
+            }
         } else if (action === "right") {
             wrapperEl.style.textAlign = "right";
+            if (this.currentBlock.type === 'image') {
+                (this.currentBlock as ImageBlock).data.align = 'right';
+            } else if (this.currentBlock.type === 'video') {
+                (this.currentBlock as VideoBlock).data.align = 'right';
+            }
         }
 
         this.editor.saveHistory();
@@ -322,6 +350,17 @@ export default class ImageBlockPlugin extends Plugin {
         const containerEl = this.currentMediaEl.parentElement;
         containerEl?.classList.remove("fill-width");
         this.currentMediaEl.classList.remove("fill-width");
+
+        // 블록 데이터 업데이트
+        if (this.currentBlock) {
+            if (this.currentBlock.type === 'image') {
+                (this.currentBlock as ImageBlock).data.width = newWidth;
+                (this.currentBlock as ImageBlock).data.height = newHeight;
+            } else if (this.currentBlock.type === 'video') {
+                (this.currentBlock as VideoBlock).data.width = newWidth;
+                (this.currentBlock as VideoBlock).data.height = newHeight;
+            }
+        }
 
         this.hideResizeModal();
         this.editor.saveHistory();

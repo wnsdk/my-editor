@@ -39,6 +39,9 @@ export type VideoBlockData = BaseBlockData & {
     type: 'video';
     src: string;
     posterUrl?: string | undefined;
+    width?: number | string | null;
+    height?: number | string | null;
+    align?: 'left' | 'center' | 'right';
 }
 
 export type TableCellData = {

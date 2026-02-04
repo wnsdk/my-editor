@@ -26,12 +26,14 @@ export default abstract class MediaBlock extends BaseBlock {
         wrapper.contentEditable = "false"; // 미디어 블록은 편집 불가능
         wrapper.draggable = true; // 드래그 가능
 
+        // 정렬 스타일 적용
+        if (align) {
+            wrapper.style.textAlign = align;
+        }
+
         // 2. 내부 컨텐츠 div 생성
         const content = document.createElement("div");
         content.className = `${this.type}-block`;
-        if (align) {
-            content.classList.add(`align-${align}`);
-        }
         wrapper.appendChild(content);
 
         this.el = wrapper;
