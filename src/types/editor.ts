@@ -13,4 +13,5 @@ export interface EditorOptions {
     plugins?: Array<new (editor: any) => any>;
     onChange?: (blocks: BaseBlockData[]) => void;
     readOnly?: boolean;
+    data?: BaseBlockData[];
 }

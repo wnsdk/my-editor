@@ -94,12 +94,9 @@ async function initEditor(initialData = null) {
                     minCellWidth: 50
                 }
             }
-        }
+        },
+        data: initialData
     });
-
-    if (initialData) {
-        editor.load(initialData);
-    }
 
     updateOutput(editor.serialize());
 }

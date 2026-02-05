@@ -203,6 +203,46 @@ export default class MultiBlockSelection {
     }
 
     /**
+     * 네이티브 selection으로부터 Range Selection을 설정합니다.
+     */
+    setRangeSelectionFromNative(
+        startBlock: BaseBlock,
+        startOffset: number,
+        endBlock: BaseBlock,
+        endOffset: number
+    ): void {
+        this.selectionType = 'range';
+        this.anchorBlock = startBlock;
+        this.anchorOffset = startOffset;
+
+        this.rangeSelection = {
+            startBlock,
+            startOffset,
+            endBlock,
+            endOffset
+        };
+
+        // 범위 내 모든 블록 선택
+        this.selectedBlockIds.clear();
+        const blocks = this.editor.blocks;
+        const rangeStartIndex = blocks.indexOf(startBlock);
+        const rangeEndIndex = blocks.indexOf(endBlock);
+
+        for (let i = rangeStartIndex; i <= rangeEndIndex; i++) {
+            const block = blocks[i];
+            if (block) {
+                this.selectedBlockIds.add(block.id);
+            }
+        }
+
+        // range-selected 클래스를 추가하지 않음
+        // 네이티브 selection이 이미 시각적으로 표현하고 있음
+        // CSS 클래스를 추가하면 블록 전체가 하이라이트되어 block selection처럼 보임
+
+        console.log("setRangeSelectionFromNative: range selection saved, native selection preserved");
+    }
+
+    /**
      * 모든 블록을 선택합니다 (Ctrl+A).
      */
     selectAll(): void {
@@ -220,6 +260,7 @@ export default class MultiBlockSelection {
      * 선택을 모두 해제합니다.
      */
     clearSelection(): void {
+        console.log("MultiBlockSelection.clearSelection called", new Error().stack);
         this.selectedBlockIds.clear();
         this.rangeSelection = null;
         this.anchorBlock = null;

@@ -138,5 +138,64 @@ export default class SelectionPlugin extends Plugin {
     private _onMouseUp(_event: MouseEvent): void {
         this.isDragging = false;
         this.dragStartBlock = null;
+
+        // 네이티브 selection을 확인하여 다중 블록 Range Selection으로 변환
+        this._captureNativeSelection();
+    }
+
+    /**
+     * 브라우저의 네이티브 selection을 MultiBlockSelection으로 변환
+     */
+    private _captureNativeSelection(): void {
+        const selection = window.getSelection();
+        console.log("SelectionPlugin._captureNativeSelection: selection=", selection, "isCollapsed=", selection?.isCollapsed);
+
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+            return;
+        }
+
+        const range = selection.getRangeAt(0);
+
+        // 시작과 끝 블록 찾기
+        const startBlockEl = getBlockElementOf(range.startContainer as HTMLElement);
+        const endBlockEl = getBlockElementOf(range.endContainer as HTMLElement);
+
+        console.log("SelectionPlugin._captureNativeSelection: startBlockEl=", startBlockEl, "endBlockEl=", endBlockEl);
+
+        if (!startBlockEl || !endBlockEl) return;
+
+        const startBlockId = startBlockEl.dataset["blockId"];
+        const endBlockId = endBlockEl.dataset["blockId"];
+
+        if (!startBlockId || !endBlockId) return;
+
+        const startBlock = this.editor.blocks.find(b => b.id === startBlockId);
+        const endBlock = this.editor.blocks.find(b => b.id === endBlockId);
+
+        if (!startBlock || !endBlock) return;
+
+        console.log("SelectionPlugin._captureNativeSelection: startBlock=", startBlock.id, "endBlock=", endBlock.id);
+
+        // 같은 블록이면 단일 블록 선택이므로 무시
+        if (startBlock === endBlock) {
+            console.log("SelectionPlugin._captureNativeSelection: same block, ignoring");
+            return;
+        }
+
+        console.log("SelectionPlugin._captureNativeSelection: setting range selection");
+
+        // 여러 블록에 걸친 selection이면 Range Selection으로 설정
+        this.editor.multiSelection.setRangeSelectionFromNative(
+            startBlock,
+            range.startOffset,
+            endBlock,
+            range.endOffset
+        );
+
+        // 다음 프레임에서 selection 상태 확인
+        requestAnimationFrame(() => {
+            const selectionAfter = window.getSelection();
+            console.log("SelectionPlugin._captureNativeSelection: next frame, selection=", selectionAfter, "isCollapsed=", selectionAfter?.isCollapsed);
+        });
     }
 }

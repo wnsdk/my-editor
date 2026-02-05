@@ -3,6 +3,7 @@ import Sanitizer from "../../core/Sanitizer";
 import type Editor from "../../core/Editor";
 import { createBlockFromJSON } from "../../blocks/BlockFactory";
 import { BaseBlockData } from "../../types";
+import type BaseBlock from "../../blocks/BaseBlock";
 
 /**
  * 에디터 복사/잘라내기/붙여넣기 이벤트 처리 플러그인
@@ -40,7 +41,11 @@ export default class CopyPastePlugin extends Plugin {
     private _onCopy(event: ClipboardEvent): void {
         const multiSelection = this.editor.multiSelection;
 
-        // 다중 블록 선택이 있는 경우
+        console.log("CopyPastePlugin._onCopy: hasSelection=", multiSelection.hasSelection(),
+                    "selectionType=", multiSelection.getSelectionType(),
+                    "rangeSelection=", multiSelection.getRangeSelection());
+
+        // 다중 블록 선택이 있는 경우만 커스텀 처리
         if (multiSelection.hasSelection()) {
             event.preventDefault();
             this._copySelectedContent(event.clipboardData);
@@ -80,30 +85,87 @@ export default class CopyPastePlugin extends Plugin {
         // 커스텀 블록 데이터가 있는지 확인
         const blocksJson = clipboardData.getData(CopyPastePlugin.MIME_TYPE);
 
+        console.log("CopyPastePlugin._onPaste: blocksJson=", blocksJson);
+
         if (blocksJson) {
             event.preventDefault();
+            console.log("CopyPastePlugin._onPaste: pasting blocks");
             this._pasteBlocks(blocksJson);
             return;
         }
 
         // 일반 HTML/텍스트 붙여넣기
-        event.preventDefault();
         const html = clipboardData.getData("text/html");
         const text = clipboardData.getData("text/plain");
 
-        const cleanedContent = Sanitizer.clean(html || text || "");
+        console.log("CopyPastePlugin: html=", html);
+        console.log("CopyPastePlugin: text=", text);
 
-        try {
-            // 다중 블록 선택이 있으면 먼저 삭제
-            if (this.editor.multiSelection.hasSelection()) {
-                this._deleteSelectedContent();
+        // HTML이나 텍스트가 있는 경우에만 처리
+        if (html || text) {
+            event.preventDefault();
+
+            // HTML을 정리
+            let cleanedContent = Sanitizer.clean(html || "");
+
+            // Sanitizer가 모든 내용을 제거한 경우, 텍스트 데이터 사용
+            if (!cleanedContent.trim() && text) {
+                cleanedContent = Sanitizer.clean(text);
             }
 
-            // NOTE: deprecated이지만 현재는 가장 단순한 방법
-            document.execCommand("insertHTML", false, cleanedContent);
-            this.editor.saveHistory();
-        } catch (error) {
-            console.error("CopyPastePlugin: Failed to insert content:", error);
+            console.log("CopyPastePlugin: cleanedContent=", cleanedContent);
+
+            try {
+                // 다중 블록 선택이 있으면 먼저 삭제
+                if (this.editor.multiSelection.hasSelection()) {
+                    this._deleteSelectedContent();
+                }
+
+                // 현재 선택 영역 가져오기
+                const selection = window.getSelection();
+                console.log("CopyPastePlugin: selection=", selection, "rangeCount=", selection?.rangeCount);
+
+                if (!selection || selection.rangeCount === 0) {
+                    console.warn("CopyPastePlugin: No selection range available.");
+                    return;
+                }
+
+                const range = selection.getRangeAt(0);
+                console.log("CopyPastePlugin: range=", range);
+
+                // 선택된 내용 삭제
+                range.deleteContents();
+
+                // HTML 파싱
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = cleanedContent;
+
+                // DocumentFragment 생성하여 삽입
+                const fragment = document.createDocumentFragment();
+                let node;
+                while ((node = tempDiv.firstChild)) {
+                    fragment.appendChild(node);
+                }
+
+                console.log("CopyPastePlugin: fragment=", fragment);
+
+                // 커서 위치에 삽입
+                range.insertNode(fragment);
+
+                // 커서를 삽입된 내용 끝으로 이동
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+
+                console.log("CopyPastePlugin: paste completed");
+
+                // input 이벤트를 발생시켜 히스토리 자동 저장 트리거
+                // (input 이벤트가 자동으로 saveHistoryDebounced를 호출함)
+                const inputEvent = new Event('input', { bubbles: true });
+                this.editor.root.dispatchEvent(inputEvent);
+            } catch (error) {
+                console.error("CopyPastePlugin: Failed to insert content:", error);
+            }
         }
     }
 
@@ -116,6 +178,8 @@ export default class CopyPastePlugin extends Plugin {
         const multiSelection = this.editor.multiSelection;
         const blocksData = multiSelection.serializeSelection();
 
+        console.log("CopyPastePlugin._copySelectedContent: blocksData=", blocksData);
+
         if (blocksData.length === 0) return;
 
         // 커스텀 MIME 타입으로 블록 데이터 저장
@@ -125,6 +189,8 @@ export default class CopyPastePlugin extends Plugin {
         const { text, html } = this._blocksToTextAndHtml(blocksData);
         clipboardData.setData("text/plain", text);
         clipboardData.setData("text/html", html);
+
+        console.log("CopyPastePlugin._copySelectedContent: copied to clipboard, MIME_TYPE data=", JSON.stringify(blocksData));
     }
 
     /**
@@ -155,6 +221,12 @@ export default class CopyPastePlugin extends Plugin {
         const startIndex = blocks.indexOf(startBlock);
         const endIndex = blocks.indexOf(endBlock);
 
+        if (startIndex === -1 || endIndex === -1) {
+            console.warn("CopyPastePlugin: startBlock or endBlock not found in editor.blocks");
+            this.editor.multiSelection.clearSelection();
+            return;
+        }
+
         if (startIndex === endIndex) {
             // 같은 블록 내 삭제
             if (startBlock.type === 'text' && startBlock.el) {
@@ -174,14 +246,10 @@ export default class CopyPastePlugin extends Plugin {
                 endBlock.el.textContent = fullText.substring(endOffset);
             }
 
-            // 중간 블록들 삭제
-            const blocksToRemove = blocks.slice(startIndex + 1, endIndex);
-            blocksToRemove.forEach(block => {
-                const idx = this.editor.blocks.indexOf(block);
-                if (idx !== -1) {
-                    this.editor.blocks.splice(idx, 1);
-                }
-            });
+            // 중간 블록들 삭제 (역순으로 삭제하여 인덱스 문제 방지)
+            for (let i = endIndex - 1; i > startIndex; i--) {
+                this.editor.blocks.splice(i, 1);
+            }
 
             // 시작/끝 블록이 모두 텍스트면 병합
             if (startBlock.type === 'text' && endBlock.type === 'text' &&
@@ -189,9 +257,10 @@ export default class CopyPastePlugin extends Plugin {
                 startBlock.el.textContent =
                     (startBlock.el.textContent || '') + (endBlock.el.textContent || '');
 
-                const endIdx = this.editor.blocks.indexOf(endBlock);
-                if (endIdx !== -1) {
-                    this.editor.blocks.splice(endIdx, 1);
+                // 끝 블록 삭제 (중간 블록들을 삭제했으므로 인덱스 재계산 필요)
+                const newEndIdx = this.editor.blocks.indexOf(endBlock);
+                if (newEndIdx !== -1) {
+                    this.editor.blocks.splice(newEndIdx, 1);
                 }
             }
         }
@@ -220,7 +289,7 @@ export default class CopyPastePlugin extends Plugin {
         blocksData.forEach((block, index) => {
             if (index > 0) {
                 text += '\n';
-                html += '<br>';
+                html += ' '; // <br> 대신 공백 사용 (한 블록 내에서 줄바꿈 문제 방지)
             }
 
             switch (block.type) {
@@ -274,50 +343,108 @@ export default class CopyPastePlugin extends Plugin {
         try {
             const blocksData: BaseBlockData[] = JSON.parse(blocksJson);
 
+            console.log("CopyPastePlugin._pasteBlocks: blocksData=", blocksData);
+
             if (!Array.isArray(blocksData) || blocksData.length === 0) return;
 
             // 현재 선택이 있으면 삭제
             if (this.editor.multiSelection.hasSelection()) {
+                console.log("CopyPastePlugin._pasteBlocks: deleting selected content");
                 this._deleteSelectedContent();
             }
 
-            // 현재 블록 찾기
             const currentBlock = this.editor.selection.getCurrentBlock() ||
-                                 this.editor.getSelectedBlock() ||
-                                 this.editor.blocks[this.editor.blocks.length - 1];
+                                 this.editor.getSelectedBlock();
 
-            let insertIndex = currentBlock ?
-                this.editor.blocks.indexOf(currentBlock) + 1 :
-                this.editor.blocks.length;
+            if (!currentBlock || currentBlock.type !== 'text' || !currentBlock.el) {
+                console.warn("CopyPastePlugin._pasteBlocks: Current block is not a text block");
+                return;
+            }
 
-            // 블록들 삽입
-            const newBlocks = blocksData.map(data => {
-                const toolConfig = this.editor.toolSettings[data.type];
-                return createBlockFromJSON(data, {
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) {
+                console.warn("CopyPastePlugin._pasteBlocks: No selection range available.");
+                return;
+            }
+
+            const range = selection.getRangeAt(0);
+
+            // 커서 이후의 내용을 추출 (나중에 마지막 블록에 붙일 것)
+            const afterRange = range.cloneRange();
+            afterRange.selectNodeContents(currentBlock.el);
+            afterRange.setStart(range.endContainer, range.endOffset);
+            const afterFragment = afterRange.extractContents();
+            const tempDiv = document.createElement('div');
+            tempDiv.appendChild(afterFragment);
+            const afterHtml = tempDiv.innerHTML || "";
+
+            // 첫 번째 블록 데이터를 현재 커서 위치에 삽입
+            const firstBlockData = blocksData[0];
+            if (firstBlockData && firstBlockData.type === 'text') {
+                const firstHtml = (firstBlockData as any).html || '';
+
+                // 현재 위치에 첫 번째 블록 내용 삽입
+                const insertRange = range.cloneRange();
+                const tempInsert = document.createElement('div');
+                tempInsert.innerHTML = firstHtml;
+                const insertFragment = document.createDocumentFragment();
+                while (tempInsert.firstChild) {
+                    insertFragment.appendChild(tempInsert.firstChild);
+                }
+                insertRange.insertNode(insertFragment);
+            }
+
+            // 나머지 블록들을 새로운 블록으로 생성
+            const currentBlockIndex = this.editor.blocks.indexOf(currentBlock);
+            const newBlocks: BaseBlock[] = [];
+
+            for (let i = 1; i < blocksData.length; i++) {
+                const blockData = blocksData[i];
+                if (!blockData) continue;
+                const toolConfig = this.editor.toolSettings[blockData.type];
+                const newBlock = createBlockFromJSON(blockData, {
                     config: toolConfig?.config ?? {},
                     api: {
                         removeBlock: (block) => this.editor.removeBlock(block),
                         editor: this.editor
                     }
                 });
-            });
+                newBlocks.push(newBlock);
+            }
 
-            // 각 블록을 적절한 위치에 삽입
+            // 마지막 블록에 커서 이후 내용 추가
+            if (newBlocks.length > 0) {
+                const lastBlock = newBlocks[newBlocks.length - 1];
+                if (lastBlock && lastBlock.type === 'text' && lastBlock.el && afterHtml) {
+                    lastBlock.el.innerHTML = (lastBlock.el.innerHTML || '') + afterHtml;
+                }
+            } else if (afterHtml) {
+                // 블록이 하나뿐이면 현재 블록에 afterHtml 추가
+                currentBlock.el.innerHTML = (currentBlock.el.innerHTML || '') + afterHtml;
+            }
+
+            // 새 블록들을 현재 블록 다음에 삽입
             newBlocks.forEach((block, idx) => {
-                this.editor.blocks.splice(insertIndex + idx, 0, block);
+                this.editor.blocks.splice(currentBlockIndex + 1 + idx, 0, block);
             });
 
             this.editor.renderer.render(this.editor.blocks);
             this.editor.saveHistory();
             this.editor.eventBus.emit('document:mutated');
 
-            // 마지막으로 삽입된 블록에 포커스
-            const lastNewBlock = newBlocks[newBlocks.length - 1];
-            if (lastNewBlock) {
+            // 마지막 블록 또는 현재 블록에 포커스
+            const focusBlock = newBlocks.length > 0 ? newBlocks[newBlocks.length - 1] : currentBlock;
+            if (focusBlock) {
                 requestAnimationFrame(() => {
-                    this.editor.selectAndFocusBlock(lastNewBlock);
+                    this.editor.selectAndFocusBlock(focusBlock);
+                    if (focusBlock.el) {
+                        // 마지막 위치로 커서 이동
+                        this.editor.selection.setRange(focusBlock.el, focusBlock.el.textContent?.length || 0);
+                    }
                 });
             }
+
+            console.log("CopyPastePlugin._pasteBlocks: paste completed");
         } catch (error) {
             console.error("CopyPastePlugin: Failed to parse blocks data:", error);
         }

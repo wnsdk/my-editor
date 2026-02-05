@@ -48,6 +48,8 @@ export default class Editor {
     public plugins: PluginInterface[];
     public blockCountChangeCallbacks: Record<string, (currentCount: number, maxCount?: number) => void> = {};
     private options: EditorOptions;
+    private saveHistoryTimer: number | null = null;
+    private readonly HISTORY_DEBOUNCE_MS = 500;
 
 
 
@@ -59,7 +61,8 @@ export default class Editor {
             placeholder = "",
             tools = {},
             plugins = [],
-            readOnly = false
+            readOnly = false,
+            data
         } = options;
 
         this.root = typeof holder === "string" ? document.getElementById(holder)! : holder;
@@ -84,7 +87,32 @@ export default class Editor {
         this._mergeToolSettings(this.toolSettings, tools);
         this._initializeBlockCountChangeCallbacks();
 
-        this.init();
+        // 초기 데이터가 있으면 load, 없으면 기본 init
+        if (data && data.length > 0) {
+            this._setupRootElement();
+            this.load(data);
+
+            // readOnly 모드가 아닐 때만 이벤트 리스너 등록 및 포커스
+            if (!this.readOnly) {
+                this.root.addEventListener("click", this.handleBlockClick.bind(this));
+                this.root.addEventListener("input", () => {
+                    this.eventBus.emit("document:mutated");
+                    this.saveHistoryDebounced();
+                });
+
+                // 첫 번째 블록에 자동 포커스 설정
+                requestAnimationFrame(() => {
+                    const firstBlock = this.blocks[0];
+                    if (firstBlock && firstBlock.el) {
+                        this.selection.setRangeAtStart(firstBlock.el);
+                    }
+                });
+            }
+
+            // 초기 데이터 로드 시에는 히스토리를 저장하지 않음
+        } else {
+            this.init();
+        }
 
         this.eventBus.on('document:mutated', () => {
             if (typeof this.options.onChange === 'function') {
@@ -106,6 +134,7 @@ export default class Editor {
             this.root.addEventListener("click", this.handleBlockClick.bind(this));
             this.root.addEventListener("input", () => {
                 this.eventBus.emit("document:mutated");
+                this.saveHistoryDebounced();
             });
 
             // 첫 번째 블록에 자동 포커스 설정
@@ -500,6 +529,21 @@ export default class Editor {
      * 에디터 루트 요소의 클릭 이벤트를 처리합니다.
      */
     handleBlockClick(event: MouseEvent) {
+        // 다중 블록 range selection이 있으면 클릭 처리 건너뛰기
+        // (mouseup 직후 click 이벤트가 발생하는데, 이때 selection을 유지해야 함)
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed) {
+            // 텍스트 선택이 있으면 클릭 처리 하지 않음
+            return;
+        }
+
+        // 네이티브 selection이 collapsed 상태면 기존 range selection 초기화
+        if (selection && selection.isCollapsed) {
+            if (this.multiSelection.getSelectionType() === 'range') {
+                this.multiSelection.clearSelection();
+            }
+        }
+
         const clickedBlockEl = event.target instanceof Element
             ? event.target.closest(".block")
             : null;
@@ -599,6 +643,19 @@ export default class Editor {
      */
     saveHistory() {
         this.history.push(this.serialize());
+    }
+
+    /**
+     * 디바운스된 히스토리 저장 (텍스트 입력 시 사용)
+     */
+    saveHistoryDebounced() {
+        if (this.saveHistoryTimer !== null) {
+            clearTimeout(this.saveHistoryTimer);
+        }
+        this.saveHistoryTimer = window.setTimeout(() => {
+            this.saveHistory();
+            this.saveHistoryTimer = null;
+        }, this.HISTORY_DEBOUNCE_MS);
     }
 
     /**

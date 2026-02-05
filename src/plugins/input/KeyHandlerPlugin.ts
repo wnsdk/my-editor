@@ -157,6 +157,8 @@ export default class KeyHandlerPlugin extends Plugin {
             const textBlock = block as TextBlock;
             if (!textBlock.el) return;
 
+            console.log("KeyHandlerPlugin._handleEnter: before split, innerHTML=", textBlock.el.innerHTML);
+
             const sel = window.getSelection();
             if (!sel || sel.rangeCount === 0) return;
 
@@ -168,12 +170,16 @@ export default class KeyHandlerPlugin extends Plugin {
 
             const fragment = afterRange.extractContents();
 
+            console.log("KeyHandlerPlugin._handleEnter: after extractContents, current block innerHTML=", textBlock.el.innerHTML);
+
             const tempDiv = document.createElement("div");
             tempDiv.appendChild(fragment);
 
             // Sanitizer를 사용하여 중첩된 블록 요소 제거
             const htmlContent = tempDiv.innerHTML || "";
             const sanitizedHtml = Sanitizer.clean(htmlContent);
+
+            console.log("KeyHandlerPlugin._handleEnter: new block content=", sanitizedHtml);
 
             const toolConfig = this.editor.getToolConfig("text");
             const newBlock = TextBlock.create(sanitizedHtml, {
@@ -184,6 +190,8 @@ export default class KeyHandlerPlugin extends Plugin {
                 }
             });
             this.editor.addBlockAfter(textBlock, newBlock);
+
+            console.log("KeyHandlerPlugin._handleEnter: after addBlockAfter, current block innerHTML=", textBlock.el.innerHTML);
 
             // addBlockAfter가 render()를 호출하므로 DOM이 업데이트된 후 포커스 설정
             requestAnimationFrame(() => {
