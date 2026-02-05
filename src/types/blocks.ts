@@ -33,6 +33,7 @@ export type ImageBlockData = BaseBlockData & {
     width?: number | string | null;
     height?: number | string | null;
     align?: 'left' | 'center' | 'right';
+    fillWidth?: boolean;
 }
 
 export type VideoBlockData = BaseBlockData & {
@@ -42,6 +43,7 @@ export type VideoBlockData = BaseBlockData & {
     width?: number | string | null;
     height?: number | string | null;
     align?: 'left' | 'center' | 'right';
+    fillWidth?: boolean;
 }
 
 export type TableCellData = {

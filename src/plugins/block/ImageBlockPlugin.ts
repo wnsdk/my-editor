@@ -57,7 +57,7 @@ export default class ImageBlockPlugin extends Plugin {
             <button data-action="left">왼쪽</button>
             <button data-action="center">가운데</button>
             <button data-action="right">오른쪽</button>
-            <button data-action="fill">가득 채우기</button>
+            <button data-action="fill">문서 너비 맞춤</button>
             <button data-action="resize">크기 조절</button>
             <button data-action="remove">삭제</button>
         `;
@@ -156,7 +156,7 @@ export default class ImageBlockPlugin extends Plugin {
         const wrapperEl = containerEl.parentElement;
         if (!wrapperEl) return;
 
-        // 가득 채우기 처리
+        // '문서 너비 맞춤' 처리
         if (action === "fill") {
             containerEl.classList.add("fill-width");
             this.currentMediaEl.classList.add("fill-width");
@@ -173,10 +173,12 @@ export default class ImageBlockPlugin extends Plugin {
                 (this.currentBlock as ImageBlock).data.width = null;
                 (this.currentBlock as ImageBlock).data.height = null;
                 (this.currentBlock as ImageBlock).data.align = 'center';
+                (this.currentBlock as ImageBlock).data.fillWidth = true;
             } else if (this.currentBlock.type === 'video') {
                 (this.currentBlock as VideoBlock).data.width = null;
                 (this.currentBlock as VideoBlock).data.height = null;
                 (this.currentBlock as VideoBlock).data.align = 'center';
+                (this.currentBlock as VideoBlock).data.fillWidth = true;
             }
 
             this.editor.saveHistory();
@@ -185,7 +187,7 @@ export default class ImageBlockPlugin extends Plugin {
 
         // 정렬 처리: wrapper에 text-align 적용
         containerEl.classList.remove("fill-width");
-        this.currentMediaEl.classList.remove("fill-width"); // 가득 채우기 클래스 제거
+        this.currentMediaEl.classList.remove("fill-width"); // '문서 너비 맞춤' 클래스 제거
 
         // 커스텀 크기가 설정되어 있지 않은 경우에만 제거
         // (px 단위로 명시적으로 설정된 경우 유지)
@@ -208,22 +210,28 @@ export default class ImageBlockPlugin extends Plugin {
             wrapperEl.style.textAlign = "left";
             if (this.currentBlock.type === 'image') {
                 (this.currentBlock as ImageBlock).data.align = 'left';
+                (this.currentBlock as ImageBlock).data.fillWidth = false;
             } else if (this.currentBlock.type === 'video') {
                 (this.currentBlock as VideoBlock).data.align = 'left';
+                (this.currentBlock as VideoBlock).data.fillWidth = false;
             }
         } else if (action === "center") {
             wrapperEl.style.textAlign = "center";
             if (this.currentBlock.type === 'image') {
                 (this.currentBlock as ImageBlock).data.align = 'center';
+                (this.currentBlock as ImageBlock).data.fillWidth = false;
             } else if (this.currentBlock.type === 'video') {
                 (this.currentBlock as VideoBlock).data.align = 'center';
+                (this.currentBlock as VideoBlock).data.fillWidth = false;
             }
         } else if (action === "right") {
             wrapperEl.style.textAlign = "right";
             if (this.currentBlock.type === 'image') {
                 (this.currentBlock as ImageBlock).data.align = 'right';
+                (this.currentBlock as ImageBlock).data.fillWidth = false;
             } else if (this.currentBlock.type === 'video') {
                 (this.currentBlock as VideoBlock).data.align = 'right';
+                (this.currentBlock as VideoBlock).data.fillWidth = false;
             }
         }
 
@@ -356,9 +364,11 @@ export default class ImageBlockPlugin extends Plugin {
             if (this.currentBlock.type === 'image') {
                 (this.currentBlock as ImageBlock).data.width = newWidth;
                 (this.currentBlock as ImageBlock).data.height = newHeight;
+                (this.currentBlock as ImageBlock).data.fillWidth = false;
             } else if (this.currentBlock.type === 'video') {
                 (this.currentBlock as VideoBlock).data.width = newWidth;
                 (this.currentBlock as VideoBlock).data.height = newHeight;
+                (this.currentBlock as VideoBlock).data.fillWidth = false;
             }
         }
 

@@ -18,6 +18,7 @@ export default class VideoBlock extends MediaBlock {
             width: null,
             height: null,
             align: "center",
+            fillWidth: false,
         };
         return new VideoBlock(data, init);
     }
@@ -45,12 +46,27 @@ export default class VideoBlock extends MediaBlock {
             posterUrl: typeof data === "string" ? undefined : data.posterUrl,
             width: typeof data === "string" ? null : data.width ?? null,
             height: typeof data === "string" ? null : data.height ?? null,
-            align: typeof data === "string" ? "center" : data.align ?? "center"
+            align: typeof data === "string" ? "center" : data.align ?? "center",
+            fillWidth: typeof data === "string" ? false : data.fillWidth ?? false
         };
 
         // MediaBlock의 createWrapper 사용
-        const { content } = this.createWrapper(this.data.align);
+        const { wrapper, content } = this.createWrapper(this.data.align);
         this.renderContent(content);
+
+        // fillWidth 상태 복원
+        if (this.data.fillWidth) {
+            content.classList.add("fill-width");
+            wrapper.style.textAlign = "";
+
+            // video 요소에도 클래스 추가
+            const video = content.querySelector('video');
+            if (video) {
+                video.classList.add("fill-width");
+                video.style.display = "block";
+                video.style.margin = "0";
+            }
+        }
     }
 
     /**

@@ -118,8 +118,8 @@ async function handleSave() {
             if (temp) {
                 await saveFileToDB(temp.fileId, temp.file);
                 block.fileId = temp.fileId;
+                tempFiles.delete(block.src); // src를 비우기 전에 먼저 삭제
                 block.src = '';
-                tempFiles.delete(block.src);
             }
         }
     }

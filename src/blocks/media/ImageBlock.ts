@@ -19,6 +19,7 @@ export default class ImageBlock extends MediaBlock {
             width: null,
             height: null,
             align: "center",
+            fillWidth: false,
         };
         return new ImageBlock(data, init);
     }
@@ -46,12 +47,27 @@ export default class ImageBlock extends MediaBlock {
             alt: data.alt ?? "",
             width: data.width ?? null,
             height: data.height ?? null,
-            align: data.align ?? "center"
+            align: data.align ?? "center",
+            fillWidth: data.fillWidth ?? false
         };
 
         // MediaBlock의 createWrapper 사용
-        const { content } = this.createWrapper(this.data.align);
+        const { wrapper, content } = this.createWrapper(this.data.align);
         this.renderContent(content);
+
+        // fillWidth 상태 복원
+        if (this.data.fillWidth) {
+            content.classList.add("fill-width");
+            wrapper.style.textAlign = "";
+
+            // img 요소에도 클래스 추가
+            const img = content.querySelector('img');
+            if (img) {
+                img.classList.add("fill-width");
+                img.style.display = "block";
+                img.style.margin = "0";
+            }
+        }
     }
 
     /**

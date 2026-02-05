@@ -57,7 +57,7 @@ ol.list-block {
     border-radius: 10px;
 }
 
-/* 가득 채우기 스타일 */
+/* 문서 너비 맞춤 스타일 */
 .image-block.fill-width,
 .video-block.fill-width {
     display: flex;
