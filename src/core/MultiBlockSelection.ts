@@ -327,22 +327,23 @@ export default class MultiBlockSelection {
             if (!block) continue;
 
             const blockData = block.toJSON();
+            const isTextEditable = (block.type === 'text' || block.type === 'list') && 'html' in blockData;
 
             if (i === startIndex && i === endIndex) {
                 // 단일 블록 내 선택
-                if (block.type === 'text' && 'html' in blockData) {
+                if (isTextEditable) {
                     const html = (blockData as any).html || '';
                     (blockData as any).html = this._extractTextRange(html, startOffset, endOffset);
                 }
             } else if (i === startIndex) {
                 // 시작 블록: startOffset부터 끝까지
-                if (block.type === 'text' && 'html' in blockData) {
+                if (isTextEditable) {
                     const html = (blockData as any).html || '';
                     (blockData as any).html = this._extractTextRange(html, startOffset, html.length);
                 }
             } else if (i === endIndex) {
                 // 끝 블록: 처음부터 endOffset까지
-                if (block.type === 'text' && 'html' in blockData) {
+                if (isTextEditable) {
                     const html = (blockData as any).html || '';
                     (blockData as any).html = this._extractTextRange(html, 0, endOffset);
                 }
@@ -417,26 +418,40 @@ export default class MultiBlockSelection {
         try {
             const range = document.createRange();
 
-            // 시작 위치 설정
-            const startNode = this._getTextNodeAtOffset(startBlock.el, startOffset);
+            // 시작 위치 설정 (리스트 블록은 .list-item-content 기준)
+            const startEl = this._getEditableRoot(startBlock);
+            const startNode = this._getTextNodeAtOffset(startEl, startOffset);
             if (startNode.node) {
                 range.setStart(startNode.node, startNode.offset);
-            } else if (startBlock.el) {
-                range.setStart(startBlock.el, 0);
+            } else if (startEl) {
+                range.setStart(startEl, 0);
             }
 
             // 끝 위치 설정
-            const endNode = this._getTextNodeAtOffset(endBlock.el, endOffset);
+            const endEl = this._getEditableRoot(endBlock);
+            const endNode = this._getTextNodeAtOffset(endEl, endOffset);
             if (endNode.node) {
                 range.setEnd(endNode.node, endNode.offset);
-            } else if (endBlock.el) {
-                range.setEndAfter(endBlock.el);
+            } else if (endEl) {
+                range.setEndAfter(endEl);
             }
 
             nativeSelection.addRange(range);
         } catch (e) {
             console.warn('Failed to apply native range selection:', e);
         }
+    }
+
+    /**
+     * 블록의 편집 가능한 루트 요소를 반환합니다.
+     * 리스트 블록은 .list-item-content, 텍스트 블록은 el 자체를 반환합니다.
+     */
+    private _getEditableRoot(block: BaseBlock): HTMLElement | null {
+        if (!block.el) return null;
+        if (block.type === 'list') {
+            return block.el.querySelector('.list-item-content') as HTMLElement | null;
+        }
+        return block.el;
     }
 
     /**

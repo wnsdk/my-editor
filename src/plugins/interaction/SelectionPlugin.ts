@@ -184,12 +184,16 @@ export default class SelectionPlugin extends Plugin {
 
         console.log("SelectionPlugin._captureNativeSelection: setting range selection");
 
+        // 오프셋 계산: 리스트 블록은 .list-item-content 기준으로 텍스트 오프셋 계산
+        const startTextOffset = this._calculateTextOffset(startBlock, range.startContainer, range.startOffset);
+        const endTextOffset = this._calculateTextOffset(endBlock, range.endContainer, range.endOffset);
+
         // 여러 블록에 걸친 selection이면 Range Selection으로 설정
         this.editor.multiSelection.setRangeSelectionFromNative(
             startBlock,
-            range.startOffset,
+            startTextOffset,
             endBlock,
-            range.endOffset
+            endTextOffset
         );
 
         // 다음 프레임에서 selection 상태 확인
@@ -197,5 +201,57 @@ export default class SelectionPlugin extends Plugin {
             const selectionAfter = window.getSelection();
             console.log("SelectionPlugin._captureNativeSelection: next frame, selection=", selectionAfter, "isCollapsed=", selectionAfter?.isCollapsed);
         });
+    }
+
+    /**
+     * 블록 내에서의 텍스트 오프셋을 계산합니다.
+     * 리스트 블록의 경우 .list-item-content 기준으로 오프셋을 계산합니다.
+     */
+    private _calculateTextOffset(block: BaseBlock, container: Node, offset: number): number {
+        if (!block.el) return offset;
+
+        // 편집 가능한 루트 요소 결정
+        let editableRoot: HTMLElement = block.el;
+        if (block.type === 'list') {
+            const content = block.el.querySelector('.list-item-content');
+            if (content instanceof HTMLElement) {
+                editableRoot = content;
+            }
+        }
+
+        // container가 editableRoot 안에 없으면 기본 오프셋 반환
+        if (!editableRoot.contains(container)) return offset;
+
+        // 텍스트 노드 기준 오프셋 계산
+        let textOffset = 0;
+
+        function walkNodes(node: Node): boolean {
+            if (node === container) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    textOffset += offset;
+                } else {
+                    // 엘리먼트 노드의 offset은 자식 인덱스를 의미
+                    for (let i = 0; i < offset && i < node.childNodes.length; i++) {
+                        const child = node.childNodes[i];
+                        if (child) {
+                            textOffset += child.textContent?.length ?? 0;
+                        }
+                    }
+                }
+                return true; // 찾았음
+            }
+
+            if (node.nodeType === Node.TEXT_NODE) {
+                textOffset += node.textContent?.length ?? 0;
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                for (const child of Array.from(node.childNodes)) {
+                    if (walkNodes(child)) return true;
+                }
+            }
+            return false;
+        }
+
+        walkNodes(editableRoot);
+        return textOffset;
     }
 }

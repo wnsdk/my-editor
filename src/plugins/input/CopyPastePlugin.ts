@@ -227,23 +227,35 @@ export default class CopyPastePlugin extends Plugin {
             return;
         }
 
+        const isTextEditable = (block: BaseBlock) =>
+            (block.type === 'text' || block.type === 'list') && block.el;
+
         if (startIndex === endIndex) {
             // 같은 블록 내 삭제
-            if (startBlock.type === 'text' && startBlock.el) {
-                this._deleteTextRange(startBlock.el, startOffset, endOffset);
+            if (isTextEditable(startBlock)) {
+                const editableEl = this._getEditableElement(startBlock);
+                if (editableEl) {
+                    this._deleteTextRange(editableEl, startOffset, endOffset);
+                }
             }
         } else {
             // 여러 블록에 걸친 삭제
             // 시작 블록: startOffset 이후 삭제
-            if (startBlock.type === 'text' && startBlock.el) {
-                const fullText = startBlock.el.textContent || '';
-                startBlock.el.textContent = fullText.substring(0, startOffset);
+            if (isTextEditable(startBlock)) {
+                const editableEl = this._getEditableElement(startBlock);
+                if (editableEl) {
+                    const fullText = editableEl.textContent || '';
+                    editableEl.textContent = fullText.substring(0, startOffset);
+                }
             }
 
             // 끝 블록: endOffset 이전 삭제
-            if (endBlock.type === 'text' && endBlock.el) {
-                const fullText = endBlock.el.textContent || '';
-                endBlock.el.textContent = fullText.substring(endOffset);
+            if (isTextEditable(endBlock)) {
+                const editableEl = this._getEditableElement(endBlock);
+                if (editableEl) {
+                    const fullText = editableEl.textContent || '';
+                    editableEl.textContent = fullText.substring(endOffset);
+                }
             }
 
             // 중간 블록들 삭제 (역순으로 삭제하여 인덱스 문제 방지)
@@ -251,16 +263,19 @@ export default class CopyPastePlugin extends Plugin {
                 this.editor.blocks.splice(i, 1);
             }
 
-            // 시작/끝 블록이 모두 텍스트면 병합
-            if (startBlock.type === 'text' && endBlock.type === 'text' &&
-                startBlock.el && endBlock.el) {
-                startBlock.el.textContent =
-                    (startBlock.el.textContent || '') + (endBlock.el.textContent || '');
+            // 시작/끝 블록이 모두 텍스트 편집 가능 블록이면 병합
+            if (isTextEditable(startBlock) && isTextEditable(endBlock)) {
+                const startEl = this._getEditableElement(startBlock);
+                const endEl = this._getEditableElement(endBlock);
+                if (startEl && endEl) {
+                    startEl.textContent =
+                        (startEl.textContent || '') + (endEl.textContent || '');
 
-                // 끝 블록 삭제 (중간 블록들을 삭제했으므로 인덱스 재계산 필요)
-                const newEndIdx = this.editor.blocks.indexOf(endBlock);
-                if (newEndIdx !== -1) {
-                    this.editor.blocks.splice(newEndIdx, 1);
+                    // 끝 블록 삭제 (중간 블록들을 삭제했으므로 인덱스 재계산 필요)
+                    const newEndIdx = this.editor.blocks.indexOf(endBlock);
+                    if (newEndIdx !== -1) {
+                        this.editor.blocks.splice(newEndIdx, 1);
+                    }
                 }
             }
         }
@@ -269,6 +284,18 @@ export default class CopyPastePlugin extends Plugin {
         this.editor.renderer.render(this.editor.blocks);
         this.editor.saveHistory();
         this.editor.eventBus.emit('document:mutated');
+    }
+
+    /**
+     * 블록의 편집 가능한 요소를 반환
+     * 텍스트 블록은 el 자체, 리스트 블록은 .list-item-content 요소
+     */
+    private _getEditableElement(block: BaseBlock): HTMLElement | null {
+        if (!block.el) return null;
+        if (block.type === 'list') {
+            return block.el.querySelector('.list-item-content') as HTMLElement | null;
+        }
+        return block.el;
     }
 
     /**
@@ -356,8 +383,19 @@ export default class CopyPastePlugin extends Plugin {
             const currentBlock = this.editor.selection.getCurrentBlock() ||
                                  this.editor.getSelectedBlock();
 
-            if (!currentBlock || currentBlock.type !== 'text' || !currentBlock.el) {
-                console.warn("CopyPastePlugin._pasteBlocks: Current block is not a text block");
+            const isCurrentTextEditable = currentBlock &&
+                (currentBlock.type === 'text' || currentBlock.type === 'list') &&
+                currentBlock.el;
+
+            if (!currentBlock || !isCurrentTextEditable) {
+                console.warn("CopyPastePlugin._pasteBlocks: Current block is not a text-editable block");
+                return;
+            }
+
+            // 편집 가능한 요소 찾기 (텍스트: el 자체, 리스트: .list-item-content)
+            const editableEl = this._getEditableElement(currentBlock);
+            if (!editableEl) {
+                console.warn("CopyPastePlugin._pasteBlocks: No editable element found");
                 return;
             }
 
@@ -371,7 +409,7 @@ export default class CopyPastePlugin extends Plugin {
 
             // 커서 이후의 내용을 추출 (나중에 마지막 블록에 붙일 것)
             const afterRange = range.cloneRange();
-            afterRange.selectNodeContents(currentBlock.el);
+            afterRange.selectNodeContents(editableEl);
             afterRange.setStart(range.endContainer, range.endOffset);
             const afterFragment = afterRange.extractContents();
             const tempDiv = document.createElement('div');
@@ -380,7 +418,7 @@ export default class CopyPastePlugin extends Plugin {
 
             // 첫 번째 블록 데이터를 현재 커서 위치에 삽입
             const firstBlockData = blocksData[0];
-            if (firstBlockData && firstBlockData.type === 'text') {
+            if (firstBlockData && (firstBlockData.type === 'text' || firstBlockData.type === 'list')) {
                 const firstHtml = (firstBlockData as any).html || '';
 
                 // 현재 위치에 첫 번째 블록 내용 삽입
@@ -415,12 +453,13 @@ export default class CopyPastePlugin extends Plugin {
             // 마지막 블록에 커서 이후 내용 추가
             if (newBlocks.length > 0) {
                 const lastBlock = newBlocks[newBlocks.length - 1];
-                if (lastBlock && lastBlock.type === 'text' && lastBlock.el && afterHtml) {
-                    lastBlock.el.innerHTML = (lastBlock.el.innerHTML || '') + afterHtml;
+                const lastEditableEl = lastBlock ? this._getEditableElement(lastBlock) : null;
+                if (lastEditableEl && afterHtml) {
+                    lastEditableEl.innerHTML = (lastEditableEl.innerHTML || '') + afterHtml;
                 }
             } else if (afterHtml) {
                 // 블록이 하나뿐이면 현재 블록에 afterHtml 추가
-                currentBlock.el.innerHTML = (currentBlock.el.innerHTML || '') + afterHtml;
+                editableEl.innerHTML = (editableEl.innerHTML || '') + afterHtml;
             }
 
             // 새 블록들을 현재 블록 다음에 삽입
