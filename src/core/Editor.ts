@@ -165,6 +165,14 @@ export default class Editor {
         }
 
         this.root.setAttribute('spellcheck', 'false');
+
+        const { minHeight, maxWidth } = this.options;
+        if (minHeight !== undefined) {
+            this.root.style.minHeight = typeof minHeight === 'number' ? `${minHeight}px` : minHeight;
+        }
+        if (maxWidth !== undefined) {
+            this.root.style.maxWidth = typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth;
+        }
     }
 
 

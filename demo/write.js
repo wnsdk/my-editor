@@ -23,6 +23,8 @@ async function initEditor(initialData = null) {
         holder: 'editor',
         toolbar: true,
         placeholder: '내용을 입력하세요.',
+        minHeight: 300,
+        maxWidth: 800,
         onChange: (blocks) => {
             updateOutput(blocks);
         },

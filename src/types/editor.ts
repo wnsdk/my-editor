@@ -14,4 +14,6 @@ export interface EditorOptions {
     onChange?: (blocks: BaseBlockData[]) => void;
     readOnly?: boolean;
     data?: BaseBlockData[];
+    minHeight?: string | number;
+    maxWidth?: string | number;
 }
